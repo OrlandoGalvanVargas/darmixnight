@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="dn_bg">@color/dn_night_bg</color>
+    <color name="dn_card">@color/dn_night_card</color>
+    <color name="dn_text">@color/dn_night_text</color>
+    <color name="dn_text_dim">@color/dn_night_text_dim</color>
+    <color name="dn_accent">@color/dn_night_accent</color>
+</resources>

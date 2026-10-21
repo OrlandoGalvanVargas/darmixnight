@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ícono de la barra de estado: silueta blanca sobre transparente, como
+     exige Android para notificaciones (nada de color aquí; el sistema la
+     tinta solo). Mismas formas que ic_launcher_foreground, a tamaño 24dp. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Arco guardián -->
+    <path
+        android:pathData="M70,26.3 A32,32 0 0 0 38,81.7"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="5"
+        android:strokeLineCap="round" />
+
+    <!-- Luna creciente limpia (una sola figura cerrada) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M50.2,33.35
+                          A21,21 0 1,0 74.07,60.19
+                          A18,18 0 0,1 50.2,33.35
+                          Z" />
+
+    <!-- Estrella principal en el hueco de la luna -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M67,41 l1.9,4.6 l4.6,1.9 l-4.6,1.9 l-1.9,4.6 l-1.9,-4.6 l-4.6,-1.9 l4.6,-1.9 z" />
+
+    <!-- Estrella pequeña abajo a la derecha -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M66,73 l1.2,2.9 l2.9,1.2 l-2.9,1.2 l-1.2,2.9 l-1.2,-2.9 l-2.9,-1.2 l2.9,-1.2 z" />
+</vector>

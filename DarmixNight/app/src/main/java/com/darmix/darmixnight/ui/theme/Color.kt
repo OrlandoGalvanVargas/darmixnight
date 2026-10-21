@@ -1,0 +1,35 @@
+package com.darmix.darmixnight.ui.theme
+
+import androidx.compose.ui.graphics.Color
+
+val NightBgTop = Color(0xFF161D3B)
+val NightBg = Color(0xFF0A0E1C)
+val NightCard = Color(0xFF121831)
+val NightRaised = Color(0xFF1A2142)
+val NightText = Color(0xFFEEF0FA)
+val NightTextDim = Color(0xFF8F96BA)
+val NightAccent = Color(0xFFF4C66B)
+val NightOnAccent = Color(0xFF1B1405)
+val NightAccentAlt = Color(0xFF8E9BFF)
+val NightGlow = Color(0xFFF4C66B)
+val NightSuccess = Color(0xFF6FD6A8)
+val NightWarn = Color(0xFFF2A65A)
+val NightDanger = Color(0xFFF27A85)
+
+val DayBgTop = Color(0xFFFFE7B8)
+val DayBg = Color(0xFFFFF8EC)
+val DayCard = Color(0xFFFFFFFF)
+val DayRaised = Color(0xFFFCEFD6)
+val DayText = Color(0xFF1A1D2E)
+val DayTextDim = Color(0xFF645F52)
+val DayAccent = Color(0xFFA15F00)
+val DayOnAccent = Color(0xFFFFFFFF)
+val DayAccentAlt = Color(0xFF3B4BC4)
+val DayGlow = Color(0xFFF7B23B)
+val DaySuccess = Color(0xFF137A53)
+val DayWarn = Color(0xFFA35200)
+val DayDanger = Color(0xFFBE2F45)
+
+val IntroSkyTop = Color(0xFF1E2754)
+val IntroSkyMid = Color(0xFF0F1530)
+val IntroHorizon = Color(0xFF2A1F2E)

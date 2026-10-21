@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">DarmixNight</string>
+    <string name="accessibility_service_description">Detecta qué aplicación abres para bloquear el acceso durante el horario de sueño configurado.</string>
+</resources>

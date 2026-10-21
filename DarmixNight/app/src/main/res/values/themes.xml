@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.DarmixNight" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/dn_night_bg</item>
+        <item name="android:colorAccent">@color/dn_night_accent</item>
+    </style>
+
+    <style name="Theme.DarmixNight.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/dn_night_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/dn_splash_moon</item>
+        <item name="postSplashScreenTheme">@style/Theme.DarmixNight</item>
+    </style>
+
+    <style name="Theme.DarmixNight.TimePicker.Light" parent="android:Theme.Material.Light.Dialog">
+        <item name="android:colorAccent">@color/dn_day_accent</item>
+        <item name="android:colorControlActivated">@color/dn_day_accent</item>
+        <item name="android:textColorPrimary">@color/dn_day_text</item>
+        <item name="android:windowBackground">@color/dn_day_card</item>
+    </style>
+
+    <style name="Theme.DarmixNight.TimePicker.Dark" parent="android:Theme.Material.Dialog">
+        <item name="android:colorAccent">@color/dn_night_accent</item>
+        <item name="android:colorControlActivated">@color/dn_night_accent</item>
+        <item name="android:textColorPrimary">@color/dn_night_text</item>
+        <item name="android:windowBackground">@color/dn_night_card</item>
+    </style>
+
+</resources>
