@@ -1,32 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="dn_night_bg_top">#FF161D3B</color>
-    <color name="dn_night_bg">#FF0A0E1C</color>
-    <color name="dn_night_card">#FF121831</color>
-    <color name="dn_night_raised">#FF1A2142</color>
-    <color name="dn_night_text">#FFEEF0FA</color>
-    <color name="dn_night_text_dim">#FF8F96BA</color>
-    <color name="dn_night_accent">#FFF4C66B</color>
-    <color name="dn_night_on_accent">#FF1B1405</color>
-    <color name="dn_night_accent_alt">#FF8E9BFF</color>
-    <color name="dn_night_glow">#FFF4C66B</color>
-    <color name="dn_night_success">#FF6FD6A8</color>
-    <color name="dn_night_warn">#FFF2A65A</color>
-    <color name="dn_night_danger">#FFF27A85</color>
+    <color name="dn_night_bg_top">#FF0F1E36</color>
+    <color name="dn_night_bg">#FF060A12</color>
+    <color name="dn_night_card">#FF0C1320</color>
+    <color name="dn_night_raised">#FF142035</color>
+    <color name="dn_night_text">#FFEAF0F7</color>
+    <color name="dn_night_text_dim">#FF8B9BB0</color>
+    <color name="dn_night_accent">#FFF2D58A</color>
+    <color name="dn_night_on_accent">#FF1A1406</color>
+    <color name="dn_night_accent_alt">#FF7DBBFF</color>
+    <color name="dn_night_glow">#FFF7E6B5</color>
+    <color name="dn_night_success">#FF5FD4A0</color>
+    <color name="dn_night_warn">#FFF5A962</color>
+    <color name="dn_night_danger">#FFFF7B7B</color>
 
-    <color name="dn_day_bg_top">#FFFFE7B8</color>
-    <color name="dn_day_bg">#FFFFF8EC</color>
+    <color name="dn_day_bg_top">#FFCFE6FB</color>
+    <color name="dn_day_bg">#FFF6FAFE</color>
     <color name="dn_day_card">#FFFFFFFF</color>
-    <color name="dn_day_raised">#FFFCEFD6</color>
-    <color name="dn_day_text">#FF1A1D2E</color>
-    <color name="dn_day_text_dim">#FF645F52</color>
-    <color name="dn_day_accent">#FFA15F00</color>
+    <color name="dn_day_raised">#FFEAF3FC</color>
+    <color name="dn_day_text">#FF0E1A2B</color>
+    <color name="dn_day_text_dim">#FF536375</color>
+    <color name="dn_day_accent">#FF1463C9</color>
     <color name="dn_day_on_accent">#FFFFFFFF</color>
-    <color name="dn_day_accent_alt">#FF3B4BC4</color>
-    <color name="dn_day_glow">#FFF7B23B</color>
+    <color name="dn_day_accent_alt">#FF935600</color>
+    <color name="dn_day_glow">#FFFFC43D</color>
     <color name="dn_day_success">#FF137A53</color>
-    <color name="dn_day_warn">#FFA35200</color>
-    <color name="dn_day_danger">#FFBE2F45</color>
+    <color name="dn_day_warn">#FFA04F00</color>
+    <color name="dn_day_danger">#FFC0303F</color>
 
     <color name="dn_bg">@color/dn_day_bg</color>
     <color name="dn_card">@color/dn_day_card</color>
@@ -34,7 +34,7 @@
     <color name="dn_text_dim">@color/dn_day_text_dim</color>
     <color name="dn_accent">@color/dn_day_accent</color>
 
-    <color name="dn_notification_accent">#FFF4C66B</color>
+    <color name="dn_notification_accent">#FFE3A72F</color>
 
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>

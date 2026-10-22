@@ -17,34 +17,55 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class KeepAliveService : Service() {
 
     companion object {
-        private const val TAG = "SleepGuardKeepAlive"
+        private const val TAG = "DarmixNightKeepAlive"
         private const val CHANNEL_ID = "sleepguard_keepalive"
         private const val ALERT_CHANNEL_ID = "sleepguard_alerts"
         private const val NOTIFICATION_ID = 1001
         private const val ALERT_NOTIFICATION_ID = 1002
-        private const val WATCHDOG_INTERVAL_MS = 15 * 60 * 1000L // 15 minutos
+        private const val WATCHDOG_INTERVAL_MS = 15 * 60 * 1000L
         private const val WATCHDOG_REQUEST_CODE = 2001
+
+        @Volatile var isRunning: Boolean = false
+            private set
+
+        fun ensureRunning(context: Context) {
+            if (isRunning) return
+            try {
+                ContextCompat.startForegroundService(
+                    context.applicationContext,
+                    Intent(context.applicationContext, KeepAliveService::class.java)
+                )
+            } catch (e: Exception) {
+                Log.w(TAG, "No se pudo iniciar KeepAliveService: ${e.message}")
+            }
+        }
     }
 
-    // Solo para la lectura puntual del horario al refrescar la notificación;
-    // no hay ningún bucle ni polling propio aquí.
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private var scheduleObserver: Job? = null
 
     override fun onCreate() {
         super.onCreate()
+        isRunning = true
         createNotificationChannel()
-        // Arranca ya mismo con un texto genérico; en cuanto la lectura del
-        // horario (async) termine, refreshScheduleNotification() la
-        // reemplaza. startForeground no puede esperar a esa lectura.
-        val notification = buildNotification("Protegiendo tu horario de sueño")
+        val notification = buildNotification(
+            NotiState.ACTIVE,
+            BlockPrefs.DEFAULT_START,
+            BlockPrefs.DEFAULT_END
+        )
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(
@@ -58,30 +79,27 @@ class KeepAliveService : Service() {
         }
 
         refreshScheduleNotification()
+        observeSchedule()
         Log.d(TAG, "KeepAliveService creado")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         scheduleWatchdog()
         checkCriticalPermissionsAndAlert()
-        // Aprovecha este mismo despertar (cada ~15 min por el watchdog, o al
-        // reiniciar) para refrescar el horario mostrado; no agrega ninguna
-        // alarma ni ciclo nuevo.
         refreshScheduleNotification()
+        observeSchedule()
         return START_STICKY
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
         Log.d(TAG, "Tarea eliminada de recientes; programando reinicio de seguridad")
-        // Red de seguridad: en fabricantes agresivos (MIUI/HyperOS) deslizar
-        // la app en "Recientes" a veces mata el proceso incluso siendo un
-        // foreground service. Reprogramamos un reinicio casi inmediato.
         scheduleRestart(delayMs = 1000L)
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        isRunning = false
         serviceScope.cancel()
         Log.d(TAG, "KeepAliveService destruido")
     }
@@ -91,15 +109,15 @@ class KeepAliveService : Service() {
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "SleepGuard en segundo plano",
+            "Estado de DarmixNight",
             NotificationManager.IMPORTANCE_LOW
         ).apply {
-            description = "Mantiene activo el bloqueo nocturno"
+            description = "Aviso permanente que mantiene activo el bloqueo nocturno"
             setShowBadge(false)
         }
         val alertChannel = NotificationChannel(
             ALERT_CHANNEL_ID,
-            "SleepGuard - Alertas de permisos",
+            "Alertas de permisos",
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
             description = "Avisa si un permiso necesario fue revocado y el bloqueo dejó de funcionar"
@@ -109,10 +127,6 @@ class KeepAliveService : Service() {
         manager.createNotificationChannel(alertChannel)
     }
 
-    /**
-     * Abre la app al tocar la notificación. Es solo una comodidad de
-     * navegación: no cambia nada de cuándo o cómo se activa el servicio.
-     */
     private fun openAppPendingIntent(requestCode: Int): PendingIntent {
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -125,41 +139,107 @@ class KeepAliveService : Service() {
         )
     }
 
-    private fun buildNotification(contentText: String): Notification {
+    private enum class NotiState { ACTIVE, BLOCKING, PAUSED }
+
+    private fun buildNotification(state: NotiState, start: Int, end: Int): Notification {
+        val (title, text, detail, sub) = when (state) {
+            NotiState.ACTIVE -> NotiContent(
+                "Protección activa",
+                "Tu descanso empieza a las ${formatTime12(start)}",
+                "Descanso de ${formatTime12(start)} a ${formatTime12(end)}. A esa hora el teléfono se bloqueará solo, aunque cierres la app.",
+                "Esperando la noche"
+            )
+            NotiState.BLOCKING -> NotiContent(
+                "Modo descanso",
+                "Bloqueado hasta las ${formatTime12(end)}",
+                "Llamadas, mensajes y cámara siguen disponibles. Deja el teléfono y vuelve a dormir; se desbloquea a las ${formatTime12(end)}.",
+                "Descansando"
+            )
+            NotiState.PAUSED -> NotiContent(
+                "DarmixNight en pausa",
+                "El bloqueo no se aplicará hasta que lo reactives",
+                "Mientras esté en pausa el teléfono no se bloqueará, ni siquiera a las ${formatTime12(start)}. Abre DarmixNight para reactivarlo.",
+                "En pausa"
+            )
+        }
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("SleepGuard activo")
-            .setContentText(contentText)
-            .setSmallIcon(R.drawable.ic_stat_sleepguard)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setSubText(sub)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(detail))
+            .setSmallIcon(R.drawable.ic_stat_darmixnight)
             .setColor(ContextCompat.getColor(this, R.color.dn_notification_accent))
             .setContentIntent(openAppPendingIntent(NOTIFICATION_ID))
-            .setOngoing(true) // impide deslizar para quitarla
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setShowWhen(false)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(Notification.CATEGORY_SERVICE)
             .build()
     }
 
-    /**
-     * Lee el horario guardado (una sola vez, no un stream infinito) y
-     * actualiza el texto de la notificación persistente con la hora de
-     * inicio y fin, indicando además si el bloqueo está activo ahora mismo.
-     * Solo se llama desde onCreate() y onStartCommand(), es decir, en los
-     * mismos momentos en que el servicio ya se despierta por su cuenta.
-     */
+    private data class NotiContent(val title: String, val text: String, val detail: String, val sub: String)
+
+    private fun observeSchedule() {
+        if (scheduleObserver?.isActive == true) return
+        scheduleObserver = serviceScope.launch {
+            combine(
+                BlockPrefs.servicePausedFlow(applicationContext),
+                BlockPrefs.startMinutesFlow(applicationContext),
+                BlockPrefs.endMinutesFlow(applicationContext)
+            ) { paused, start, end -> Triple(paused, start, end) }
+                .distinctUntilChanged()
+                .collectLatest { (paused, start, end) ->
+                    while (true) {
+                        postScheduleNotification(paused, start, end)
+                        if (paused) break
+                        delay(millisUntilNextBoundary(start, end))
+                    }
+                }
+        }
+    }
+
+    private fun millisUntilNextBoundary(start: Int, end: Int): Long {
+        val now = ScheduleUtils.currentMinutesOfDay()
+        val toStart = ((start - now) % 1440 + 1440) % 1440
+        val toEnd = ((end - now) % 1440 + 1440) % 1440
+        val minutes = listOf(toStart, toEnd).filter { it > 0 }.minOrNull() ?: 1440
+        val intoCurrentMinute = System.currentTimeMillis() % 60_000L
+        return (minutes * 60_000L - intoCurrentMinute + 500L).coerceAtLeast(1_000L)
+    }
+
+    private fun postScheduleNotification(paused: Boolean, start: Int, end: Int) {
+        try {
+            val withinRange = ScheduleUtils.isWithinBlockRange(ScheduleUtils.currentMinutesOfDay(), start, end)
+            val state = when {
+                paused -> NotiState.PAUSED
+                withinRange -> NotiState.BLOCKING
+                else -> NotiState.ACTIVE
+            }
+            getSystemService(NotificationManager::class.java)
+                .notify(NOTIFICATION_ID, buildNotification(state, start, end))
+        } catch (e: Exception) {
+            Log.e(TAG, "No se pudo actualizar la notificación: ${e.message}")
+        }
+    }
+
     private fun refreshScheduleNotification() {
         serviceScope.launch {
             try {
+                val paused = BlockPrefs.servicePausedFlow(applicationContext).first()
                 val start = BlockPrefs.startMinutesFlow(applicationContext).first()
                 val end = BlockPrefs.endMinutesFlow(applicationContext).first()
                 val withinRange = ScheduleUtils.isWithinBlockRange(
                     ScheduleUtils.currentMinutesOfDay(), start, end
                 )
-                val text = if (withinRange) {
-                    "Bloqueando ahora · hasta las ${formatTime12(end)}"
-                } else {
-                    "Horario: ${formatTime12(start)} - ${formatTime12(end)}"
+                val state = when {
+                    paused -> NotiState.PAUSED
+                    withinRange -> NotiState.BLOCKING
+                    else -> NotiState.ACTIVE
                 }
                 getSystemService(NotificationManager::class.java)
-                    .notify(NOTIFICATION_ID, buildNotification(text))
+                    .notify(NOTIFICATION_ID, buildNotification(state, start, end))
             } catch (e: Exception) {
                 Log.e(TAG, "No se pudo actualizar el horario en la notificación: ${e.message}")
             }
@@ -186,7 +266,6 @@ class KeepAliveService : Service() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
                 !alarmManager.canScheduleExactAlarms()
             ) {
-                // Sin permiso de alarmas exactas: usamos una aproximada como respaldo.
                 alarmManager.setAndAllowWhileIdle(
                     AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAt, pendingIntent
                 )
@@ -210,14 +289,6 @@ class KeepAliveService : Service() {
         )
     }
 
-    /**
-     * Revisa los permisos críticos para que el bloqueo funcione de verdad
-     * (accesibilidad, overlay, batería). Si falta alguno, muestra una
-     * notificación de alta prioridad avisando al usuario. Si todo está bien,
-     * quita la alerta si existía. Se llama cada vez que el watchdog dispara
-     * (cada ~15 minutos) para detectar permisos revocados solos por el
-     * sistema (frecuente en HyperOS tras actualizaciones).
-     */
     private fun checkCriticalPermissionsAndAlert() {
         val status = PermissionUtils.checkAll(applicationContext)
         val manager = getSystemService(NotificationManager::class.java)
@@ -226,8 +297,6 @@ class KeepAliveService : Service() {
         if (!status.accessibilityEnabled) {
             missing.add("Servicio de accesibilidad")
         } else if (!BlockAccessibilityService.isHeartbeatFresh(maxAgeMs = 5 * 60 * 1000L)) {
-            // El interruptor dice "activado" pero no ha dado señales de vida
-            // en 5 minutos: probablemente esté congelado/con un ANR.
             missing.add("Servicio de accesibilidad (no responde, desactívalo y vuelve a activarlo)")
         }
         if (!status.overlayGranted) missing.add("Mostrar sobre otras apps")
@@ -240,18 +309,24 @@ class KeepAliveService : Service() {
 
         Log.w(TAG, "Permisos críticos faltantes: $missing")
 
+        val missingText = missing.joinToString(", ")
         val alertNotification = NotificationCompat.Builder(this, ALERT_CHANNEL_ID)
-            .setContentTitle("SleepGuard no está protegiendo tu horario")
-            .setContentText("Falta: ${missing.joinToString(", ")}. Toca para arreglarlo.")
-            .setStyle(NotificationCompat.BigTextStyle().bigText(
-                "El bloqueo nocturno no funcionará hasta que concedas: " +
-                        "${missing.joinToString(", ")}. Toca para abrir la app."
-            ))
-            .setSmallIcon(R.drawable.ic_stat_sleepguard)
-            .setColor(ContextCompat.getColor(this, R.color.dn_night_danger))
+            .setContentTitle("Tus noches están desprotegidas")
+            .setContentText("Falta: $missingText")
+            .setSubText("Requiere atención")
+            .setStyle(
+                NotificationCompat.BigTextStyle().bigText(
+                    "El bloqueo nocturno no funcionará hasta que lo arregles. Falta: $missingText."
+                )
+            )
+            .setSmallIcon(R.drawable.ic_stat_darmixnight)
+            .setColor(ContextCompat.getColor(this, R.color.dn_day_danger))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(Notification.CATEGORY_ERROR)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setOnlyAlertOnce(true)
             .setContentIntent(openAppPendingIntent(ALERT_NOTIFICATION_ID))
+            .addAction(0, "Arreglar ahora", openAppPendingIntent(ALERT_NOTIFICATION_ID + 1))
             .setAutoCancel(false)
             .build()
 

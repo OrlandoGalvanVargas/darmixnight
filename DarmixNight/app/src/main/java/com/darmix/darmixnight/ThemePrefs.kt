@@ -7,14 +7,8 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-// Archivo propio, separado del DataStore de BlockPrefs: dos delegados no pueden
-// apuntar al mismo nombre de archivo dentro del mismo proceso.
 private val Context.themeDataStore by preferencesDataStore(name = "sleepguard_theme")
 
-/**
- * Preferencia de apariencia. `null` significa "sigue al sistema", que es el
- * estado inicial hasta que la persona toca el interruptor por primera vez.
- */
 object ThemePrefs {
 
     private val DARK_MODE = booleanPreferencesKey("dark_mode")

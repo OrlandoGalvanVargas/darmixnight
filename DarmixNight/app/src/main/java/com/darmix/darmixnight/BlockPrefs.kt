@@ -1,6 +1,7 @@
 package com.darmix.darmixnight
 
 import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -9,24 +10,15 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 
-// IMPORTANTE: no debe ser "private". Otros archivos (EmergencyUnlockManager)
-// necesitan usar esta MISMA instancia de DataStore. Declarar una segunda
-// instancia apuntando al mismo nombre de archivo desde otro sitio provoca
-// un crash en tiempo de ejecución ("multiple DataStores active").
 internal val Context.dataStore by preferencesDataStore(name = "sleepguard_prefs")
 
-/**
- * Guarda y expone el horario de bloqueo como minutos desde medianoche (0..1439).
- * Ej: 23:30 -> 1410, 05:00 -> 300.
- */
 object BlockPrefs {
 
     private val START_MINUTES = intPreferencesKey("start_minutes")
     private val END_MINUTES = intPreferencesKey("end_minutes")
 
-    // Valores por defecto: 23:30 y 05:00
-    const val DEFAULT_START = 23 * 60 + 30 // 1410
-    const val DEFAULT_END = 5 * 60         // 300
+    const val DEFAULT_START = 23 * 60 + 30
+    const val DEFAULT_END = 5 * 60
 
     private val EMERGENCY_DURATION_MINUTES = intPreferencesKey("emergency_duration_minutes")
     const val DEFAULT_EMERGENCY_DURATION_MINUTES = 10
@@ -45,11 +37,6 @@ object BlockPrefs {
         context.dataStore.edit { it[END_MINUTES] = minutes }
     }
 
-    /**
-     * Lecturas síncronas/bloqueantes, para usarlas desde el AccessibilityService
-     * o el ForegroundService, donde no siempre es cómodo manejar corrutinas.
-     * OJO: nunca llamar esto desde el hilo principal (Main thread) de la UI.
-     */
     fun getStartMinutesBlocking(context: Context): Int = runBlocking {
         startMinutesFlow(context).first()
     }
@@ -57,8 +44,6 @@ object BlockPrefs {
     fun getEndMinutesBlocking(context: Context): Int = runBlocking {
         endMinutesFlow(context).first()
     }
-
-    // --- Duración del desbloqueo de emergencia (en minutos) ---
 
     fun emergencyDurationMinutesFlow(context: Context): Flow<Int> =
         context.dataStore.data.map { it[EMERGENCY_DURATION_MINUTES] ?: DEFAULT_EMERGENCY_DURATION_MINUTES }
@@ -69,5 +54,14 @@ object BlockPrefs {
 
     fun getEmergencyDurationMinutesBlocking(context: Context): Int = runBlocking {
         emergencyDurationMinutesFlow(context).first()
+    }
+
+    private val SERVICE_PAUSED = booleanPreferencesKey("service_paused")
+
+    fun servicePausedFlow(context: Context): Flow<Boolean> =
+        context.dataStore.data.map { it[SERVICE_PAUSED] ?: false }
+
+    suspend fun setServicePaused(context: Context, paused: Boolean) {
+        context.dataStore.edit { it[SERVICE_PAUSED] = paused }
     }
 }

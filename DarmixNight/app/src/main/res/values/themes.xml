@@ -12,18 +12,4 @@
         <item name="postSplashScreenTheme">@style/Theme.DarmixNight</item>
     </style>
 
-    <style name="Theme.DarmixNight.TimePicker.Light" parent="android:Theme.Material.Light.Dialog">
-        <item name="android:colorAccent">@color/dn_day_accent</item>
-        <item name="android:colorControlActivated">@color/dn_day_accent</item>
-        <item name="android:textColorPrimary">@color/dn_day_text</item>
-        <item name="android:windowBackground">@color/dn_day_card</item>
-    </style>
-
-    <style name="Theme.DarmixNight.TimePicker.Dark" parent="android:Theme.Material.Dialog">
-        <item name="android:colorAccent">@color/dn_night_accent</item>
-        <item name="android:colorControlActivated">@color/dn_night_accent</item>
-        <item name="android:textColorPrimary">@color/dn_night_text</item>
-        <item name="android:windowBackground">@color/dn_night_card</item>
-    </style>
-
 </resources>

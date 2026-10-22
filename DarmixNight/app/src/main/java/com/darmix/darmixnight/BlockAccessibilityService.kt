@@ -15,15 +15,10 @@ import kotlinx.coroutines.launch
 class BlockAccessibilityService : AccessibilityService() {
 
     companion object {
-        private const val TAG = "SleepGuardA11y"
+        private const val TAG = "DarmixNightA11y"
         private const val CHECK_INTERVAL_MS = 2000L
+        private const val KEEP_ALIVE_CHECK_EVERY = 30
 
-        /**
-         * Marca de tiempo del último chequeo exitoso (evento o periódico).
-         * Pública para que KeepAliveService pueda saber si el servicio sigue
-         * "vivo" de verdad, más allá de que el interruptor de Ajustes diga
-         * que está activado.
-         */
         @Volatile var lastHeartbeatMillis: Long = 0L
             private set
 
@@ -72,6 +67,8 @@ class BlockAccessibilityService : AccessibilityService() {
     @Volatile private var cachedEndMinutes = BlockPrefs.DEFAULT_END
     @Volatile private var lastForegroundPackage: String? = null
     @Volatile private var isBlocking = false
+    @Volatile private var cachedPaused = false
+    private var ticksSinceKeepAliveCheck = 0
 
     private val periodicCheck = object : Runnable {
         override fun run() {
@@ -79,6 +76,11 @@ class BlockAccessibilityService : AccessibilityService() {
                 evaluate()
             } catch (e: Exception) {
                 Log.e(TAG, "Error en chequeo periódico: ${e.message}", e)
+            }
+            ticksSinceKeepAliveCheck++
+            if (ticksSinceKeepAliveCheck >= KEEP_ALIVE_CHECK_EVERY) {
+                ticksSinceKeepAliveCheck = 0
+                KeepAliveService.ensureRunning(applicationContext)
             }
             handler.postDelayed(this, CHECK_INTERVAL_MS)
         }
@@ -95,7 +97,11 @@ class BlockAccessibilityService : AccessibilityService() {
         serviceScope.launch {
             BlockPrefs.endMinutesFlow(applicationContext).collect { cachedEndMinutes = it }
         }
+        serviceScope.launch {
+            BlockPrefs.servicePausedFlow(applicationContext).collect { cachedPaused = it }
+        }
 
+        KeepAliveService.ensureRunning(applicationContext)
         handler.post(periodicCheck)
     }
 
@@ -103,10 +109,6 @@ class BlockAccessibilityService : AccessibilityService() {
         try {
             handleEvent(event)
         } catch (e: Exception) {
-            // Nunca dejar que una excepción puntual tumbe el proceso completo:
-            // eso mataría de paso a KeepAliveService (mismo proceso) y, en
-            // exceso, Android podría desactivar el servicio por considerarlo
-            // "mal comportado".
             Log.e(TAG, "Error manejando evento de accesibilidad: ${e.message}", e)
         }
     }
@@ -119,11 +121,6 @@ class BlockAccessibilityService : AccessibilityService() {
 
         if (packageName in IGNORED_TRANSIENT_PACKAGES) return
 
-        // La propia ventana del overlay (añadida con WindowManager, sin ser
-        // una Activity) también genera este evento y se reporta con nuestro
-        // propio packageName. Si no es realmente MainActivity, es el overlay
-        // hablando de sí mismo: lo ignoramos para no auto-desbloquearnos justo
-        // después de mostrarlo.
         val className = event.className?.toString()
         if (packageName == applicationContext.packageName &&
             className != MainActivity::class.java.name
@@ -150,10 +147,15 @@ class BlockAccessibilityService : AccessibilityService() {
 
         val pkg = lastForegroundPackage ?: return
 
-        // Si hay un desbloqueo de emergencia activo, no bloquear nada hasta
-        // que expire (el propio chequeo periódico se encargará de reanudar
-        // el bloqueo automáticamente cuando termine el tiempo).
         if (EmergencyUnlockManager.isBypassActive()) {
+            if (isBlocking) {
+                OverlayManager.hideOverlay(applicationContext)
+                isBlocking = false
+            }
+            return
+        }
+
+        if (cachedPaused) {
             if (isBlocking) {
                 OverlayManager.hideOverlay(applicationContext)
                 isBlocking = false
