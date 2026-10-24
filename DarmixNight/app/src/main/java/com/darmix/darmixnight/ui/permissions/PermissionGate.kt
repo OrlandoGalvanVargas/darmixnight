@@ -632,7 +632,7 @@ private fun PrivacyNote() {
         Glyph(DnGlyph.SHIELD, colors.accentAlt, size = 20.dp)
         Spacer(Modifier.width(12.dp))
         Text(
-            "DarmixNight no tiene acceso a internet. Nada de lo que hace sale de tu teléfono.",
+            "DarmixNight solo se conecta a internet para buscar actualizaciones en GitHub. Tu horario y tu uso nunca salen del teléfono.",
             style = MaterialTheme.typography.bodySmall,
             color = colors.textDim
         )

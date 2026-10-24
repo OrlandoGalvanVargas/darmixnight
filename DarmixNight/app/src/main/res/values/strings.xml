@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">DarmixNight</string>
-    <string name="accessibility_service_description">Detecta qué aplicación abres para bloquear el acceso durante el horario de sueño configurado.</string>
+    <string name="accessibility_service_description">DarmixNight solo detecta qué app se abre durante tu horario de descanso para cubrirla con la pantalla de bloqueo. No lee, no guarda y no envía lo que ves ni lo que escribes.</string>
 </resources>

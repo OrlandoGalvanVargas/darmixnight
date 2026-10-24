@@ -38,6 +38,8 @@ import com.darmix.darmixnight.ui.permissions.PermissionGate
 import com.darmix.darmixnight.ui.splash.NightIntro
 import com.darmix.darmixnight.ui.theme.DarmixNightTheme
 import com.darmix.darmixnight.ui.theme.DnTheme
+import com.darmix.darmixnight.ui.update.UpdateHost
+import com.darmix.darmixnight.update.UpdateManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -70,6 +72,7 @@ class MainActivity : ComponentActivity() {
         }
 
         val playIntro = savedInstanceState == null
+        if (savedInstanceState == null) UpdateManager.checkOnLaunch(this)
 
         setContent {
             val systemDark = isSystemInDarkTheme()
@@ -103,6 +106,8 @@ class MainActivity : ComponentActivity() {
                             start = themeReady,
                             onFinished = { introVisible = false }
                         )
+                    } else {
+                        UpdateHost()
                     }
                 }
             }

@@ -1,12 +1,19 @@
 package com.darmix.darmixnight.ui.main
 
 import android.content.Intent
-import androidx.compose.animation.core.Animatable
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,11 +34,12 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -46,8 +54,11 @@ import com.darmix.darmixnight.ui.components.SkyBackdrop
 import com.darmix.darmixnight.ui.components.ThemeToggleButton
 import com.darmix.darmixnight.ui.theme.DnTheme
 import com.darmix.darmixnight.ui.theme.DnType
+import com.darmix.darmixnight.update.UpdateRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+private val TabContentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 120.dp)
 
 @Composable
 fun MainScreen(
@@ -77,13 +88,15 @@ fun MainScreen(
         }
     }
 
-    val blocking = !paused && ScheduleUtils.isWithinBlockRange(now, startMinutes, endMinutes)
     val inBlockWindow = ScheduleUtils.isWithinBlockRange(now, startMinutes, endMinutes)
     val editable = !inBlockWindow
     val emergencyOpenNow = ScheduleUtils.isWithinEmergencyUnlockWindow(now)
 
+    var tab by rememberSaveable { mutableStateOf(MainTab.NIGHT) }
     var sheetFor by remember { mutableStateOf<ScheduleEdge?>(null) }
     var askPause by remember { mutableStateOf(false) }
+
+    BackHandler(enabled = tab != MainTab.NIGHT) { tab = MainTab.NIGHT }
 
     val saveSchedule: (Int, Int) -> Unit = { s, e ->
         if (s != e) {
@@ -101,98 +114,107 @@ fun MainScreen(
         }
     }
 
-    val enter = remember { Animatable(0f) }
-    LaunchedEffect(Unit) { enter.animateTo(1f, tween(1000, easing = FastOutSlowInEasing)) }
-
     SkyBackdrop(modifier = modifier) {
-        Column(
-            modifier = Modifier
+        Box(
+            Modifier
                 .fillMaxSize()
                 .safeDrawingPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
         ) {
-            Spacer(Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                MoonMark()
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    "DarmixNight",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = colors.text,
-                    modifier = Modifier.weight(1f)
-                )
-                ThemeToggleButton(onClick = onToggleTheme)
-            }
-
-            Spacer(Modifier.height(18.dp))
-
-            Rise(enter.value, 0) {
-                ServiceCard(
-                    paused = paused,
-                    canToggle = editable,
-                    resumesAt = endMinutes,
-                    onToggle = { if (paused) setPaused(false) else askPause = true }
-                )
-            }
-
-            Spacer(Modifier.height(14.dp))
-
-            Rise(enter.value, 1) {
-                SkyHero(
-                    startMinutes = startMinutes,
-                    endMinutes = endMinutes,
-                    now = now,
-                    blocking = blocking,
-                    paused = paused
-                )
-            }
-
-            Spacer(Modifier.height(26.dp))
-
-            Rise(enter.value, 2) {
-                Column {
-                    SectionHeader(
-                        title = "TU HORARIO",
-                        hint = if (editable) "Toca una tarjeta para cambiar la hora" else "Bloqueado hasta las ${TimeText.full(endMinutes)}"
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    ScheduleCards(
-                        startMinutes = startMinutes,
-                        endMinutes = endMinutes,
-                        editable = editable,
-                        onPick = { sheetFor = it }
-                    )
+            Column(Modifier.fillMaxSize()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 20.dp, end = 20.dp, top = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    MoonMark()
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("DarmixNight", style = MaterialTheme.typography.titleSmall, color = colors.text)
+                        Text(tab.label, style = MaterialTheme.typography.labelMedium, color = colors.textDim)
+                    }
+                    ThemeToggleButton(onClick = onToggleTheme)
                 }
-            }
 
-            Spacer(Modifier.height(26.dp))
-
-            Rise(enter.value, 3) {
-                Column {
-                    SectionHeader(title = "EMERGENCIA", hint = if (emergencyOpenNow) "Disponible ahora" else "No disponible de noche")
-                    Spacer(Modifier.height(12.dp))
-                    EmergencyCard(
-                        weeklyUses = weeklyUses,
-                        durationMinutes = emergencyMinutes,
-                        now = now,
-                        openNow = emergencyOpenNow,
-                        editable = editable,
-                        onChangeDuration = { m ->
-                            scope.launch { BlockPrefs.setEmergencyDurationMinutes(context, m) }
+                AnimatedContent(
+                    targetState = tab,
+                    transitionSpec = {
+                        val direction = if (targetState.ordinal > initialState.ordinal) 1 else -1
+                        (slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { it / 6 * direction } +
+                                fadeIn(tween(320, delayMillis = 60))) togetherWith
+                                (slideOutHorizontally(tween(320, easing = FastOutSlowInEasing)) { -it / 8 * direction } +
+                                        fadeOut(tween(180)))
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    label = "mainTabs"
+                ) { current ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(TabContentPadding)
+                    ) {
+                        when (current) {
+                            MainTab.NIGHT -> NightTab(
+                                startMinutes = startMinutes,
+                                endMinutes = endMinutes,
+                                paused = paused,
+                                editable = editable,
+                                onPick = { sheetFor = it }
+                            )
+                            MainTab.EMERGENCY -> {
+                                SectionHeader(
+                                    title = "DESBLOQUEO DE EMERGENCIA",
+                                    hint = if (emergencyOpenNow) "Disponible ahora" else "No disponible de noche"
+                                )
+                                Spacer(Modifier.height(12.dp))
+                                EmergencyCard(
+                                    weeklyUses = weeklyUses,
+                                    durationMinutes = emergencyMinutes,
+                                    now = now,
+                                    openNow = emergencyOpenNow,
+                                    editable = editable,
+                                    onChangeDuration = { m ->
+                                        scope.launch { BlockPrefs.setEmergencyDurationMinutes(context, m) }
+                                    }
+                                )
+                            }
+                            MainTab.SETTINGS -> {
+                                SectionHeader(title = "SERVICIO", hint = if (paused) "En pausa" else "Activo")
+                                Spacer(Modifier.height(12.dp))
+                                ServiceCard(
+                                    paused = paused,
+                                    canToggle = editable,
+                                    resumesAt = endMinutes,
+                                    onToggle = { if (paused) setPaused(false) else askPause = true }
+                                )
+                                Spacer(Modifier.height(26.dp))
+                                SectionHeader(title = "DURANTE EL DESCANSO", hint = "")
+                                Spacer(Modifier.height(12.dp))
+                                AllowedAppsNote()
+                                Spacer(Modifier.height(28.dp))
+                                Text(
+                                    "DarmixNight ${remember { UpdateRepository.installedVersion(context) }}",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = colors.textDim,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
                         }
-                    )
+                    }
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
-
-            Rise(enter.value, 4) { AllowedAppsNote() }
-
-            Spacer(Modifier.height(32.dp))
+            MoonDock(
+                selected = tab,
+                onSelect = { tab = it },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(start = 20.dp, end = 20.dp, bottom = 14.dp)
+            )
         }
     }
 
@@ -220,18 +242,6 @@ fun MainScreen(
             onDismiss = { askPause = false }
         )
     }
-}
-
-@Composable
-private fun Rise(progress: Float, index: Int, content: @Composable () -> Unit) {
-    Box(
-        Modifier.graphicsLayer {
-            val start = index * 0.08f
-            val t = ((progress - start) / 0.5f).coerceIn(0f, 1f)
-            alpha = t
-            translationY = (1f - t) * 24.dp.toPx()
-        }
-    ) { content() }
 }
 
 @Composable

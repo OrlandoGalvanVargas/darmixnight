@@ -1,10 +1,8 @@
 package com.darmix.darmixnight.ui.main
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -13,8 +11,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -68,12 +64,8 @@ import com.darmix.darmixnight.ScheduleUtils
 import com.darmix.darmixnight.ui.components.Crescent
 import com.darmix.darmixnight.ui.components.DnGlyph
 import com.darmix.darmixnight.ui.components.Glyph
-import com.darmix.darmixnight.ui.components.buildStars
 import com.darmix.darmixnight.ui.theme.DnTheme
 import com.darmix.darmixnight.ui.theme.DnType
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
 
 private val DurationOptions = (5..60 step 5).toList()
 
@@ -195,178 +187,6 @@ internal fun PauseDialog(startMinutes: Int, onConfirm: () -> Unit, onDismiss: ()
             }
         }
     )
-}
-
-private val NightCardTop = Color(0xFF0E2147)
-private val NightCardBottom = Color(0xFF050B18)
-private val NightCardMoon = Color(0xFFF7E6B5)
-private val NightCardAccent = Color(0xFFF2D58A)
-private val DawnLow = Color(0xFFFFB25A)
-private val DawnMid = Color(0xFFFFD98A)
-private val DawnHigh = Color(0xFFFFF3D6)
-private val DawnInk = Color(0xFF2A1800)
-private val DawnInkSoft = Color(0xFF7A4300)
-private val DawnSun = Color(0xFFFFF7E2)
-
-@Composable
-internal fun ScheduleCards(
-    startMinutes: Int,
-    endMinutes: Int,
-    editable: Boolean,
-    onPick: (ScheduleEdge) -> Unit
-) {
-    val colors = DnTheme.colors
-    Box(Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            NightCard(startMinutes, editable, { onPick(ScheduleEdge.START) }, Modifier.weight(1f))
-            DawnCard(endMinutes, editable, { onPick(ScheduleEdge.END) }, Modifier.weight(1f))
-        }
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .background(colors.card, CircleShape)
-                .background(colors.raised.copy(alpha = 0.4f), CircleShape)
-                .padding(horizontal = 14.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Glyph(DnGlyph.MOON, colors.accent, size = 14.dp, strokeWidth = 2f)
-            Spacer(Modifier.width(6.dp))
-            Text(
-                "${TimeText.span(TimeText.between(startMinutes, endMinutes))} de descanso",
-                style = MaterialTheme.typography.labelMedium,
-                color = colors.text
-            )
-        }
-    }
-}
-
-@Composable
-private fun pressedScale(source: MutableInteractionSource): Float {
-    val pressed by source.collectIsPressedAsState()
-    val s by animateFloatAsState(if (pressed) 0.96f else 1f, spring(stiffness = 800f), label = "cardPress")
-    return s
-}
-
-@Composable
-private fun NightCard(minutes: Int, editable: Boolean, onClick: () -> Unit, modifier: Modifier) {
-    val source = remember { MutableInteractionSource() }
-    val scale = pressedScale(source)
-    val stars = remember { buildStars(count = 16, seed = 9, maxY = 0.6f) }
-    val moon = remember { Crescent.unitPath() }
-    Surface(
-        onClick = onClick,
-        enabled = editable,
-        shape = RoundedCornerShape(26.dp),
-        color = Color.Transparent,
-        interactionSource = source,
-        modifier = modifier
-            .height(158.dp)
-            .graphicsLayer { scaleX = scale; scaleY = scale }
-            .semantics { contentDescription = "Empieza a las ${TimeText.full(minutes)}. Toca para cambiar." }
-    ) {
-        Box(
-            Modifier
-                .fillMaxSize()
-                .drawWithCache {
-                    val bg = Brush.linearGradient(listOf(NightCardTop, NightCardBottom), Offset.Zero, Offset(size.width, size.height))
-                    val moonCenter = Offset(size.width - 34.dp.toPx(), 38.dp.toPx())
-                    val halo = Brush.radialGradient(
-                        listOf(NightCardMoon.copy(alpha = 0.32f), Color.Transparent),
-                        center = moonCenter,
-                        radius = 56.dp.toPx()
-                    )
-                    val r = 17.dp.toPx()
-                    onDrawBehind {
-                        drawRect(bg)
-                        stars.forEach { s ->
-                            drawCircle(Color.White, s.radiusDp * density, Offset(s.x * size.width, s.y * size.height), alpha = 0.35f + 0.5f * s.phase / 6.3f)
-                        }
-                        drawCircle(halo, 56.dp.toPx(), moonCenter)
-                        translate(moonCenter.x, moonCenter.y) {
-                            scale(r, r, pivot = Offset.Zero) { drawPath(moon, NightCardMoon) }
-                        }
-                    }
-                }
-                .padding(16.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("EMPIEZA", style = DnType.overline, color = Color.White.copy(alpha = 0.75f))
-                if (!editable) {
-                    Spacer(Modifier.width(6.dp))
-                    Glyph(DnGlyph.LOCK, Color.White.copy(alpha = 0.75f), size = 13.dp, strokeWidth = 2f)
-                }
-            }
-            Column(Modifier.align(Alignment.BottomStart)) {
-                Text(TimeText.hour(minutes), style = DnType.clock.copy(fontSize = 40.sp, lineHeight = 44.sp), color = Color.White)
-                Text("${TimeText.period(minutes)} · noche", style = MaterialTheme.typography.labelLarge, color = NightCardAccent)
-            }
-        }
-    }
-}
-
-@Composable
-private fun DawnCard(minutes: Int, editable: Boolean, onClick: () -> Unit, modifier: Modifier) {
-    val source = remember { MutableInteractionSource() }
-    val scale = pressedScale(source)
-    Surface(
-        onClick = onClick,
-        enabled = editable,
-        shape = RoundedCornerShape(26.dp),
-        color = Color.Transparent,
-        interactionSource = source,
-        modifier = modifier
-            .height(158.dp)
-            .graphicsLayer { scaleX = scale; scaleY = scale }
-            .semantics { contentDescription = "Termina a las ${TimeText.full(minutes)}. Toca para cambiar." }
-    ) {
-        Box(
-            Modifier
-                .fillMaxSize()
-                .drawWithCache {
-                    val bg = Brush.linearGradient(
-                        0f to DawnLow,
-                        0.55f to DawnMid,
-                        1f to DawnHigh,
-                        start = Offset(0f, size.height),
-                        end = Offset(size.width, 0f)
-                    )
-                    val sun = Offset(size.width - 32.dp.toPx(), 40.dp.toPx())
-                    val halo = Brush.radialGradient(listOf(Color.White.copy(alpha = 0.55f), Color.Transparent), center = sun, radius = 50.dp.toPx())
-                    val rayIn = 18.dp.toPx()
-                    val rayOut = 24.dp.toPx()
-                    val rayWidth = 2.4.dp.toPx()
-                    onDrawBehind {
-                        drawRect(bg)
-                        drawCircle(halo, 50.dp.toPx(), sun)
-                        drawCircle(DawnSun, 13.dp.toPx(), sun)
-                        repeat(8) { i ->
-                            val a = PI / 4.0 * i
-                            val dx = cos(a).toFloat()
-                            val dy = sin(a).toFloat()
-                            drawLine(DawnSun, Offset(sun.x + dx * rayIn, sun.y + dy * rayIn), Offset(sun.x + dx * rayOut, sun.y + dy * rayOut), rayWidth, StrokeCap.Round)
-                        }
-                    }
-                }
-                .padding(16.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("TERMINA", style = DnType.overline, color = DawnInk.copy(alpha = 0.7f))
-                if (!editable) {
-                    Spacer(Modifier.width(6.dp))
-                    Glyph(DnGlyph.LOCK, DawnInk.copy(alpha = 0.7f), size = 13.dp, strokeWidth = 2f)
-                }
-            }
-            Column(Modifier.align(Alignment.BottomStart)) {
-                Text(TimeText.hour(minutes), style = DnType.clock.copy(fontSize = 40.sp, lineHeight = 44.sp), color = DawnInk)
-                Text("${TimeText.period(minutes)} · amanecer", style = MaterialTheme.typography.labelLarge, color = DawnInkSoft)
-            }
-        }
-    }
 }
 
 @Composable

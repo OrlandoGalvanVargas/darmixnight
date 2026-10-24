@@ -1,25 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Versión de una sola tinta para los iconos temáticos de Android 13+.
-     Misma luna de una sola figura que el foreground a color. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
-    android:viewportHeight="108"
-    android:tint="#FFFFFFFF">
-    <path
-        android:pathData="M70,26.3 A32,32 0 0 0 38,81.7"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="5"
-        android:strokeLineCap="round" />
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M50.2,33.35
-                          A21,21 0 1,0 74.07,60.19
-                          A18,18 0 0,1 50.2,33.35
-                          Z" />
-    <path android:fillColor="#FFFFFFFF"
-        android:pathData="M67,41 l1.9,4.6 l4.6,1.9 l-4.6,1.9 l-1.9,4.6 l-1.9,-4.6 l-4.6,-1.9 l4.6,-1.9 z" />
-    <path android:fillColor="#FFFFFFFF"
-        android:pathData="M66,73 l1.2,2.9 l2.9,1.2 l-2.9,1.2 l-1.2,2.9 l-1.2,-2.9 l-2.9,-1.2 l2.9,-1.2 z" />
+    android:viewportHeight="108">
+    <group
+        android:scaleX="2"
+        android:scaleY="2"
+        android:translateX="30"
+        android:translateY="30">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M2.30,6.20 A3.3,3.3 0 1,0 8.90,6.20 A3.3,3.3 0 1,0 2.30,6.20 Z M15.10,6.20 A3.3,3.3 0 1,0 21.70,6.20 A3.3,3.3 0 1,0 15.10,6.20 Z" />
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M3.00,13.60 A9.0,8.0 0 1,0 21.00,13.60 A9.0,8.0 0 1,0 3.00,13.60 Z M5.31,14.19 A2.9,2.35 -22 1,0 10.69,12.01 A2.9,2.35 -22 1,0 5.31,14.19 Z M13.31,12.01 A2.9,2.35 22 1,0 18.69,14.19 A2.9,2.35 22 1,0 13.31,12.01 Z M10.50,17.10 A1.5,1.05 0 1,0 13.50,17.10 A1.5,1.05 0 1,0 10.50,17.10 Z" />
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M6.60,13.00 Q8.10,14.30 9.60,13.00 Q8.10,15.10 6.60,13.00 Z M14.40,13.00 Q15.90,14.30 17.40,13.00 Q15.90,15.10 14.40,13.00 Z" />
+    </group>
 </vector>

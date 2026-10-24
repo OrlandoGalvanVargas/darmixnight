@@ -35,6 +35,17 @@ android {
     }
 }
 
+androidComponents {
+    onVariants { variant ->
+        val mainOutput = variant.outputs.singleOrNull()
+        if (mainOutput != null) {
+            val vName = android.defaultConfig.versionName ?: "1.0"
+
+            (mainOutput as? com.android.build.api.variant.impl.VariantOutputImpl)?.outputFileName?.set("DarmixNight-v${vName}.apk")
+        }
+    }
+}
+
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
