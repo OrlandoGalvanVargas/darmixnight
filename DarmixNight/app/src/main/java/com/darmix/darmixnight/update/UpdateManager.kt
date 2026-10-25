@@ -20,13 +20,19 @@ sealed interface UpdateState {
     data class Failed(val release: ReleaseInfo, val installed: String, val message: String) : UpdateState
 }
 
+enum class ManualCheck { IDLE, CHECKING, UP_TO_DATE, FOUND, OFFLINE }
+
 object UpdateManager {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _state = MutableStateFlow<UpdateState>(UpdateState.Hidden)
     val state: StateFlow<UpdateState> = _state.asStateFlow()
 
+    private val _manualCheck = MutableStateFlow(ManualCheck.IDLE)
+    val manualCheck: StateFlow<ManualCheck> = _manualCheck.asStateFlow()
+
     private var checkJob: Job? = null
+    private var manualJob: Job? = null
     private var downloadJob: Job? = null
 
     fun checkOnLaunch(context: Context) {
@@ -45,6 +51,34 @@ object UpdateManager {
             }
         }
     }
+
+    fun checkNow(context: Context) {
+        val app = context.applicationContext
+        if (manualJob?.isActive == true) return
+        manualJob = scope.launch {
+            _manualCheck.value = ManualCheck.CHECKING
+            val release = try {
+                UpdateRepository.refreshNewerRelease(app)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                _manualCheck.value = ManualCheck.OFFLINE
+                return@launch
+            }
+            if (release == null) {
+                _manualCheck.value = ManualCheck.UP_TO_DATE
+                return@launch
+            }
+            _manualCheck.value = ManualCheck.FOUND
+            val s = _state.value
+            if (s is UpdateState.Hidden || s is UpdateState.Failed) {
+                _state.value = UpdateState.Available(release, UpdateRepository.installedVersion(app))
+            }
+        }
+    }
+
+    fun hasPendingRelease(context: Context): Boolean =
+        UpdateRepository.cachedNewerRelease(context.applicationContext) != null
 
     fun dismiss() {
         downloadJob?.cancel()

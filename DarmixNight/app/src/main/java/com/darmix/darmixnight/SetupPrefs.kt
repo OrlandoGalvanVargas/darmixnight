@@ -9,6 +9,7 @@ object SetupPrefs {
     private const val KEY_COMPLETED = "setup_completed"
     private const val KEY_XIAOMI_DONE = "xiaomi_autostart_done"
     private const val KEY_RESTRICTION_ACK = "restriction_acknowledged"
+    private const val KEY_GUIDE_SEEN = "welcome_guide_seen"
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -29,5 +30,11 @@ object SetupPrefs {
 
     fun setRestrictionAcknowledged(context: Context, done: Boolean) {
         prefs(context).edit { putBoolean(KEY_RESTRICTION_ACK, done) }
+    }
+
+    fun isGuideSeen(context: Context): Boolean = prefs(context).getBoolean(KEY_GUIDE_SEEN, false)
+
+    fun setGuideSeen(context: Context, seen: Boolean) {
+        prefs(context).edit { putBoolean(KEY_GUIDE_SEEN, seen) }
     }
 }

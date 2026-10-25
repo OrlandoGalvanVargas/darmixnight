@@ -29,7 +29,3 @@ val DayGlow = Color(0xFFE2C092)
 val DaySuccess = Color(0xFF256B4D)
 val DayWarn = Color(0xFF93500E)
 val DayDanger = Color(0xFFB23E4B)
-
-val IntroSkyTop = Color(0xFF13376C)
-val IntroSkyMid = Color(0xFF102752)
-val IntroHorizon = Color(0xFF1D4C83)

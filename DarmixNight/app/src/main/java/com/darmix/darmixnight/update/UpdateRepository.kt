@@ -24,6 +24,7 @@ object UpdateRepository {
     private const val OWNER = "OrlandoGalvanVargas"
     private const val REPO = "darmixnight"
     private const val LATEST_URL = "https://api.github.com/repos/$OWNER/$REPO/releases/latest"
+    const val RELEASES_PAGE = "https://github.com/$OWNER/$REPO/releases"
     private const val CHECK_INTERVAL_MS = 30L * 60L * 1000L
     private const val TIMEOUT_MS = 15_000
 
@@ -57,6 +58,15 @@ object UpdateRepository {
         val release = cachedOrFetched(context) ?: return null
         return if (isNewer(release.version, installedVersion(context))) release else null
     }
+
+    suspend fun refreshNewerRelease(context: Context): ReleaseInfo? {
+        val fetched = fetchLatest()
+        writeCache(context, fetched)
+        return fetched?.takeIf { isNewer(it.version, installedVersion(context)) }
+    }
+
+    fun cachedNewerRelease(context: Context): ReleaseInfo? =
+        readCache(context)?.takeIf { isNewer(it.version, installedVersion(context)) }
 
     private suspend fun cachedOrFetched(context: Context): ReleaseInfo? {
         val p = prefs(context)

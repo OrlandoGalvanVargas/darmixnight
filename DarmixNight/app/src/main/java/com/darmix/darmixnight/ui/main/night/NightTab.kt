@@ -1,4 +1,4 @@
-package com.darmix.darmixnight.ui.main
+package com.darmix.darmixnight.ui.main.night
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -66,6 +66,8 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.darmix.darmixnight.ScheduleUtils
+import com.darmix.darmixnight.ui.main.ScheduleEdge
+import com.darmix.darmixnight.ui.main.TimeText
 import com.darmix.darmixnight.ui.components.DnGlyph
 import com.darmix.darmixnight.ui.components.Glyph
 import com.darmix.darmixnight.ui.components.rememberSceneClock

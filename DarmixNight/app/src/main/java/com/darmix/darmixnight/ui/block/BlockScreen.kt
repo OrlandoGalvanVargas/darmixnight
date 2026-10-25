@@ -1,29 +1,28 @@
 package com.darmix.darmixnight.ui.block
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,6 +30,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -48,6 +48,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -57,17 +58,25 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.PathOperation
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
@@ -77,49 +86,57 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.darmix.darmixnight.ScheduleUtils
-import com.darmix.darmixnight.ui.components.Crescent
+import com.darmix.darmixnight.ui.components.AppConstellation
+import com.darmix.darmixnight.ui.components.ConstellationApp
 import com.darmix.darmixnight.ui.components.DnGlyph
 import com.darmix.darmixnight.ui.components.DnPrimaryButton
-import com.darmix.darmixnight.ui.components.DnSecondaryButton
-import com.darmix.darmixnight.ui.components.FarRidge
 import com.darmix.darmixnight.ui.components.Glyph
-import com.darmix.darmixnight.ui.components.MidRidge
-import com.darmix.darmixnight.ui.components.NearRidge
-import com.darmix.darmixnight.ui.components.buildStars
-import com.darmix.darmixnight.ui.components.ridgePath
+import com.darmix.darmixnight.ui.components.SkyBackdrop
+import com.darmix.darmixnight.ui.components.rememberSceneClock
 import com.darmix.darmixnight.ui.main.TimeText
+import com.darmix.darmixnight.ui.panda.PandaMood
+import com.darmix.darmixnight.ui.panda.PandaMotion
+import com.darmix.darmixnight.ui.panda.drawPanda
 import com.darmix.darmixnight.ui.theme.DnTheme
 import com.darmix.darmixnight.ui.theme.DnType
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.PI
 import kotlin.math.ceil
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 enum class BlockStep { HOLD, PHRASE }
 
-private val SkyTop = Color(0xFF02050C)
-private val SkyMid = Color(0xFF071226)
-private val SkyLow = Color(0xFF0C2142)
-private val HillFar = Color(0xFF0C1A31)
-private val HillMid = Color(0xFF081326)
-private val HillNear = Color(0xFF040A16)
-private val MoonLight = Color(0xFFF7E6B5)
-private val Glass = Color.White.copy(alpha = 0.06f)
+private val CardInk = Color(0xFF0A1428)
 private val GlassEdge = Color.White.copy(alpha = 0.12f)
+private val SirenRed = Color(0xFFE5484D)
+private val MoonTop = Color(0xFFFFF4D6)
+private val MoonMid = Color(0xFFF0D49C)
+private val MoonLow = Color(0xFFC99A55)
+private val MoonGlow = Color(0xFFF4E3BC)
+private val PandaRim = Color(0xFF4A5680)
+
+private val NightApps = listOf(
+    ConstellationApp(DnGlyph.CALL, "Llamadas"),
+    ConstellationApp(DnGlyph.MESSAGE, "Mensajes"),
+    ConstellationApp(DnGlyph.CONTACT, "Contactos"),
+    ConstellationApp(DnGlyph.CAMERA, "Cámara")
+)
 
 @Composable
 fun BlockScreen(
     emergencyAllowed: Boolean,
     holdDurationMs: Long,
     requiredPhrase: String,
+    startMinutes: Int,
     endMinutes: Int,
     loadWeeklyUses: suspend () -> Int,
     step: BlockStep,
@@ -135,10 +152,10 @@ fun BlockScreen(
         }
     }
     val weeklyUses by produceState<Int?>(null) { value = loadWeeklyUses() }
+    val clock = rememberSceneClock()
+    val typing = emergencyAllowed && step == BlockStep.PHRASE
 
-    Box(Modifier.fillMaxSize()) {
-        NightSky(Modifier.fillMaxSize())
-
+    SkyBackdrop(Modifier.fillMaxSize()) {
         BoxWithConstraints(
             Modifier
                 .fillMaxSize()
@@ -149,45 +166,34 @@ fun BlockScreen(
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
                     .heightIn(min = maxHeight)
-                    .padding(horizontal = 28.dp, vertical = 24.dp),
+                    .padding(horizontal = 24.dp, vertical = 20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    ModeBadge()
-                    Spacer(Modifier.height(if (step == BlockStep.PHRASE) 28.dp else 64.dp))
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Text(
-                            TimeText.hour(now),
-                            style = DnType.clock.copy(fontSize = 80.sp, lineHeight = 84.sp, letterSpacing = (-3).sp),
-                            color = colors.text
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        Text(
-                            TimeText.period(now),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = colors.textDim,
-                            modifier = Modifier.padding(bottom = 14.dp)
-                        )
-                    }
-                    Spacer(Modifier.height(8.dp))
+                    ModeBadge(clock)
+                    Spacer(Modifier.height(if (typing) 18.dp else 30.dp))
+                    CenteredClock(now)
                     Text(
                         "Es hora de dormir",
-                        style = MaterialTheme.typography.headlineMedium,
+                        style = DnType.clockMedium.copy(fontSize = 20.sp, lineHeight = 26.sp),
                         color = colors.text,
                         textAlign = TextAlign.Center
                     )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "Tu descanso termina a las ${TimeText.full(endMinutes)}. Faltan ${TimeText.span(TimeText.between(now, endMinutes))}.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = colors.textDim,
-                        textAlign = TextAlign.Center
-                    )
+                    AnimatedVisibility(
+                        visible = !typing,
+                        enter = fadeIn(tween(400)) + expandVertically(tween(400)),
+                        exit = fadeOut(tween(200)) + shrinkVertically(tween(320))
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            MoonCradle(clock)
+                            NightBar(startMinutes, endMinutes, now)
+                        }
+                    }
                 }
 
                 Column(
-                    modifier = Modifier.padding(top = 40.dp),
+                    modifier = Modifier.padding(top = 28.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     if (!emergencyAllowed) {
@@ -205,6 +211,7 @@ fun BlockScreen(
                                 BlockStep.HOLD -> HoldToUnlock(
                                     holdDurationMs = holdDurationMs,
                                     weeklyUses = weeklyUses,
+                                    clock = clock,
                                     onComplete = { onStepChange(BlockStep.PHRASE) }
                                 )
                                 BlockStep.PHRASE -> PhraseCard(
@@ -222,107 +229,181 @@ fun BlockScreen(
 }
 
 @Composable
-private fun NightSky(modifier: Modifier) {
-    val stars = remember { buildStars(count = 110, seed = 33, maxY = 0.62f) }
-    val moon = remember { Crescent.unitPath() }
-    val time = rememberInfiniteTransition(label = "blockSky").animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(28_000, easing = LinearEasing), RepeatMode.Restart),
-        label = "blockSkyTime"
-    )
-    Box(
-        modifier.drawWithCache {
-            val w = size.width
-            val h = size.height
-            val hillH = h * 0.42f
-            val far = ridgePath(FarRidge, w, hillH)
-            val mid = ridgePath(MidRidge, w, hillH)
-            val near = ridgePath(NearRidge, w, hillH)
-            val sky = Brush.verticalGradient(0f to SkyTop, 0.55f to SkyMid, 1f to SkyLow)
-            val moonCenter = Offset(w * 0.84f, h * 0.11f)
-            val moonR = 26.dp.toPx()
-            val halo = Brush.radialGradient(
-                0f to MoonLight.copy(alpha = 0.22f),
-                0.4f to MoonLight.copy(alpha = 0.07f),
-                1f to Color.Transparent,
-                center = moonCenter,
-                radius = moonR * 6f
-            )
-            val trail = 110.dp.toPx()
-            onDrawBehind {
-                val t = time.value
-                drawRect(sky)
-                stars.forEach { s ->
-                    val tw = 0.5f + 0.5f * sin(t * 2f * PI.toFloat() * 3f + s.phase)
-                    drawCircle(
-                        color = if (s.warm) MoonLight else Color.White,
-                        radius = s.radiusDp * density,
-                        center = Offset(s.x * w, s.y * h),
-                        alpha = 0.25f + 0.6f * tw
-                    )
+private fun ModeBadge(clock: State<Float>) {
+    val colors = DnTheme.colors
+    Row(
+        Modifier
+            .background(Color.White.copy(alpha = 0.07f), CircleShape)
+            .border(1.dp, GlassEdge, CircleShape)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Spacer(
+            Modifier
+                .size(14.dp)
+                .drawBehind {
+                    val pulse = 0.5f + 0.5f * sin(clock.value * 2.4f)
+                    drawCircle(colors.accent, size.minDimension / 2f, alpha = 0.15f + 0.2f * pulse)
+                    drawCircle(colors.accent, 3.5.dp.toPx())
                 }
-                val shoot = (t * 2f % 1f) / 0.08f
-                if (shoot < 1f) {
-                    val head = Offset(w * (0.18f + 0.35f * shoot), h * (0.08f + 0.1f * shoot))
-                    val tail = Offset(head.x - trail * 0.94f, head.y - trail * 0.3f)
-                    val fade = sin(shoot * PI.toFloat())
-                    drawLine(
-                        brush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.8f * fade), Color.Transparent), head, tail),
-                        start = head,
-                        end = tail,
-                        strokeWidth = 1.4.dp.toPx(),
-                        cap = StrokeCap.Round
-                    )
-                }
-                drawCircle(halo, moonR * 6f, moonCenter)
-                translate(moonCenter.x, moonCenter.y) {
-                    scale(moonR, moonR, pivot = Offset.Zero) { drawPath(moon, MoonLight) }
-                }
-                translate(0f, h - hillH) {
-                    drawPath(far, HillFar)
-                    drawPath(mid, HillMid)
-                    drawPath(near, HillNear)
-                }
-                drawRect(
-                    Brush.verticalGradient(0.6f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.5f)),
-                    size = Size(w, h)
-                )
-            }
-        }
-    )
+        )
+        Spacer(Modifier.width(8.dp))
+        Text("MODO DESCANSO", style = DnType.overline.copy(letterSpacing = 2.2.sp), color = colors.text)
+    }
 }
 
 @Composable
-private fun ModeBadge() {
+private fun CenteredClock(now: Int) {
     val colors = DnTheme.colors
-    val pulse = rememberInfiniteTransition(label = "modePulse").animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(2400, easing = LinearEasing), RepeatMode.Restart),
-        label = "modePulseValue"
-    )
-    Row(
-        modifier = Modifier
-            .background(Glass, CircleShape)
-            .border(1.dp, GlassEdge, CircleShape)
-            .padding(start = 6.dp, end = 14.dp, top = 6.dp, bottom = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            Modifier
-                .size(24.dp)
-                .drawBehind {
-                    val p = pulse.value
-                    drawCircle(colors.accent, size.minDimension / 2f + 7.dp.toPx() * p, alpha = 0.4f * (1f - p))
+    val periodStyle = DnType.clockMedium.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold)
+    Row(verticalAlignment = Alignment.Bottom) {
+        Text(
+            TimeText.period(now),
+            style = periodStyle,
+            color = Color.Transparent,
+            modifier = Modifier
+                .padding(end = 6.dp, bottom = 16.dp)
+                .alpha(0f)
+        )
+        Text(
+            TimeText.hour(now),
+            style = DnType.clock.copy(fontSize = 84.sp, lineHeight = 88.sp, letterSpacing = (-3).sp),
+            color = colors.text
+        )
+        Text(
+            TimeText.period(now),
+            style = periodStyle,
+            color = colors.textDim,
+            modifier = Modifier.padding(start = 6.dp, bottom = 16.dp)
+        )
+    }
+}
+
+@Composable
+private fun MoonCradle(clock: State<Float>) {
+    val crescent = remember { CradleShape() }
+    Spacer(
+        Modifier
+            .fillMaxWidth()
+            .height(270.dp)
+            .semantics { contentDescription = "Panda durmiendo en la luna" }
+            .drawWithCache {
+                val u = density
+                val cx = size.width / 2f
+                val cy = 150f * u
+                val shape = crescent.build(cx, cy, 112f * u, 46f * u)
+                val moonBrush = Brush.verticalGradient(
+                    0f to MoonTop,
+                    0.6f to MoonMid,
+                    1f to MoonLow,
+                    startY = cy - 112f * u,
+                    endY = cy + 112f * u
+                )
+                val glow = Brush.radialGradient(
+                    0f to MoonGlow.copy(alpha = 0.42f),
+                    0.5f to MoonGlow.copy(alpha = 0.12f),
+                    1f to Color.Transparent,
+                    center = Offset(cx, cy - 10f * u),
+                    radius = 230f * u
+                )
+                onDrawBehind {
+                    drawCradle(clock.value, cx, cy, u, shape, moonBrush, glow)
                 }
-                .background(colors.accent, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Glyph(DnGlyph.MOON, colors.onAccent, size = 14.dp, strokeWidth = 2.2f)
+            }
+    )
+}
+
+private class CradleShape {
+    fun build(cx: Float, cy: Float, r: Float, lift: Float): Path {
+        val outer = Path().apply { addOval(Rect(Offset(cx, cy), r)) }
+        val inner = Path().apply { addOval(Rect(Offset(cx, cy - lift), r)) }
+        return Path().apply { op(outer, inner, PathOperation.Difference) }
+    }
+}
+
+private fun DrawScope.drawCradle(
+    t: Float,
+    cx: Float,
+    cy: Float,
+    u: Float,
+    shape: Path,
+    moonBrush: Brush,
+    glow: Brush
+) {
+    val r = 112f * u
+    val lift = 46f * u
+    val hornX = sqrt(r * r - (lift / 2f) * (lift / 2f))
+    val hornY = cy - lift / 2f
+    val pulse = 0.9f + 0.1f * sin(t * 1.2f)
+    drawCircle(glow, 230f * u * pulse, Offset(cx, cy - 10f * u))
+    val sway = 4f * sin(t * 0.9f)
+    rotate(sway, Offset(cx, 0f)) {
+        for (hx in floatArrayOf(cx - hornX, cx + hornX)) {
+            drawLine(
+                MoonGlow.copy(alpha = 0.35f),
+                Offset(hx, hornY - 2f * u),
+                Offset(hx, 0f),
+                strokeWidth = 1f * u,
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(2f * u, 4f * u))
+            )
         }
-        Spacer(Modifier.width(9.dp))
-        Text("MODO DESCANSO", style = DnType.overline, color = colors.text.copy(alpha = 0.85f))
+        drawPath(shape, moonBrush)
+        floatArrayOf(-70f, 30f, 9f, -30f, 62f, 6f, 40f, 66f, 8f, 78f, 28f, 5f, 0f, 80f, 4f).toList().chunked(3).forEach { (dx, dy, cr) ->
+            drawCircle(MoonLow, cr * u, Offset(cx + dx * u, cy + dy * u), alpha = 0.35f)
+        }
+        val s = 0.92f * u
+        val left = cx - 106f * s
+        val top = cy + r - lift / 2f - 194f * s + 6f * u
+        translate(left, top) {
+            scale(s, s, Offset.Zero) {
+                drawPanda(PandaMood.SLEEP, PandaMotion(t, 0f, 0f, 0f, PandaRim))
+            }
+        }
+    }
+}
+
+@Composable
+private fun NightBar(start: Int, end: Int, now: Int) {
+    val colors = DnTheme.colors
+    val total = TimeText.between(start, end).coerceAtLeast(1)
+    val elapsed = TimeText.between(start, now).coerceAtMost(total)
+    val target = elapsed / total.toFloat()
+    val fraction by animateFloatAsState(target, tween(900), label = "nightBar")
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
+        Spacer(
+            Modifier
+                .fillMaxWidth()
+                .height(22.dp)
+                .drawBehind {
+                    val y = size.height / 2f
+                    val x0 = 6.dp.toPx()
+                    val x1 = size.width - 6.dp.toPx()
+                    val mx = x0 + (x1 - x0) * fraction
+                    drawLine(Color.White.copy(alpha = 0.14f), Offset(x0, y), Offset(x1, y), 4.dp.toPx(), StrokeCap.Round)
+                    if (mx > x0) {
+                        drawLine(
+                            Brush.horizontalGradient(listOf(colors.accent.copy(alpha = 0.3f), colors.accent), startX = x0, endX = mx),
+                            Offset(x0, y),
+                            Offset(mx, y),
+                            4.dp.toPx(),
+                            StrokeCap.Round
+                        )
+                    }
+                    drawCircle(colors.accent, 11.dp.toPx(), Offset(mx, y), alpha = 0.2f)
+                    drawCircle(colors.accent, 6.dp.toPx(), Offset(mx, y))
+                }
+        )
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(TimeText.full(start), style = MaterialTheme.typography.labelMedium, color = colors.textDim)
+            Text(
+                "Faltan ${TimeText.span(TimeText.between(now, end))}",
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                color = colors.accent,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f)
+            )
+            Text(TimeText.full(end), style = MaterialTheme.typography.labelMedium, color = colors.textDim)
+        }
     }
 }
 
@@ -330,29 +411,24 @@ private fun ModeBadge() {
 private fun NightOnlyNote() {
     val colors = DnTheme.colors
     Column(
-        modifier = Modifier
+        Modifier
             .fillMaxWidth()
-            .widthIn(max = 380.dp)
-            .background(Glass, RoundedCornerShape(26.dp))
-            .border(1.dp, GlassEdge, RoundedCornerShape(26.dp))
-            .padding(20.dp),
+            .widthIn(max = 420.dp)
+            .background(Color.White.copy(alpha = 0.06f), RoundedCornerShape(26.dp))
+            .border(1.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(26.dp))
+            .padding(horizontal = 14.dp, vertical = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Glyph(DnGlyph.LOCK, colors.textDim, size = 22.dp)
-        Spacer(Modifier.height(10.dp))
+        Text("Buenas noches", style = DnType.clockMedium.copy(fontSize = 19.sp, lineHeight = 24.sp), color = colors.text)
+        Spacer(Modifier.height(4.dp))
         Text(
-            "De noche no hay desbloqueo de emergencia",
-            style = MaterialTheme.typography.titleSmall,
-            color = colors.text,
-            textAlign = TextAlign.Center
-        )
-        Spacer(Modifier.height(6.dp))
-        Text(
-            "Llamadas y mensajes siguen funcionando. Deja el teléfono, respira hondo y vuelve a dormir.",
+            "De noche no hay salida de emergencia.\nEsto sí sigue funcionando:",
             style = MaterialTheme.typography.bodySmall,
             color = colors.textDim,
             textAlign = TextAlign.Center
         )
+        Spacer(Modifier.height(16.dp))
+        AppConstellation(NightApps)
     }
 }
 
@@ -360,6 +436,7 @@ private fun NightOnlyNote() {
 private fun HoldToUnlock(
     holdDurationMs: Long,
     weeklyUses: Int?,
+    clock: State<Float>,
     onComplete: () -> Unit
 ) {
     val colors = DnTheme.colors
@@ -387,21 +464,19 @@ private fun HoldToUnlock(
         ) {
             Text(
                 "$remainingSeconds",
-                style = DnType.clock.copy(fontSize = 56.sp, lineHeight = 60.sp),
-                color = colors.accent
+                style = DnType.clock.copy(fontSize = 44.sp, lineHeight = 48.sp),
+                color = colors.text
             )
             Text(
-                if (remainingSeconds == 1) "segundo" else "segundos",
+                if (remainingSeconds == 1) "SEGUNDO" else "SEGUNDOS",
                 style = DnType.overline,
-                color = colors.accent.copy(alpha = 0.8f)
+                color = colors.textDim
             )
         }
-        Spacer(Modifier.height(14.dp))
-        Text("¿Es una emergencia?", style = MaterialTheme.typography.titleSmall, color = colors.text)
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(10.dp))
         Box(
             modifier = Modifier
-                .size(112.dp)
+                .size(150.dp)
                 .graphicsLayer { scaleX = press; scaleY = press }
                 .semantics { contentDescription = "Mantén presionado $totalSeconds segundos para una emergencia" }
                 .pointerInput(Unit) {
@@ -426,67 +501,56 @@ private fun HoldToUnlock(
                     }
                 }
                 .drawWithCache {
-                    val stroke = 5.dp.toPx()
-                    val inset = stroke / 2f + 2.dp.toPx()
-                    val arcSize = Size(size.width - inset * 2, size.height - inset * 2)
+                    val ringStroke = 5.dp.toPx()
+                    val ringRadius = 46.dp.toPx()
+                    val coreRadius = 36.dp.toPx()
+                    val middle = Offset(size.width / 2f, size.height / 2f)
+                    val shine = Brush.radialGradient(
+                        listOf(Color.White.copy(alpha = 0.45f), Color.Transparent),
+                        center = Offset(middle.x - coreRadius * 0.3f, middle.y - coreRadius * 0.4f),
+                        radius = coreRadius * 1.3f
+                    )
                     onDrawBehind {
-                        drawCircle(Color.White.copy(alpha = 0.05f), size.minDimension / 2f - inset - 6.dp.toPx())
-                        drawArc(
-                            color = Color.White.copy(alpha = 0.12f),
-                            startAngle = 0f,
-                            sweepAngle = 360f,
-                            useCenter = false,
-                            topLeft = Offset(inset, inset),
-                            size = arcSize,
-                            style = Stroke(stroke)
-                        )
                         val p = progress.value
+                        val breathe = 0.5f + 0.5f * sin(clock.value * 2f)
+                        drawCircle(SirenRed, 70.dp.toPx(), alpha = 0.08f + 0.06f * breathe + 0.12f * p)
+                        drawCircle(SirenRed, 54.dp.toPx(), alpha = 0.14f + 0.1f * p)
+                        drawCircle(Color.White.copy(alpha = 0.12f), ringRadius, style = Stroke(ringStroke))
                         if (p > 0f) {
-                            drawCircle(
-                                Brush.radialGradient(
-                                    listOf(colors.accent.copy(alpha = 0.28f * p), Color.Transparent),
-                                    center = center,
-                                    radius = size.minDimension * 0.75f
-                                ),
-                                size.minDimension * 0.75f
-                            )
                             drawArc(
-                                color = colors.accent,
+                                color = SirenRed,
                                 startAngle = -90f,
                                 sweepAngle = 360f * p,
                                 useCenter = false,
-                                topLeft = Offset(inset, inset),
-                                size = arcSize,
-                                style = Stroke(stroke, cap = StrokeCap.Round)
+                                topLeft = Offset(center.x - ringRadius, center.y - ringRadius),
+                                size = Size(ringRadius * 2f, ringRadius * 2f),
+                                style = Stroke(ringStroke, cap = StrokeCap.Round)
                             )
                         }
+                        drawCircle(SirenRed, coreRadius)
+                        drawCircle(shine, coreRadius)
                     }
                 },
             contentAlignment = Alignment.Center
         ) {
-            Glyph(
-                DnGlyph.HOLD,
-                if (holding) colors.accent else colors.text.copy(alpha = 0.85f),
-                size = 34.dp,
-                strokeWidth = 1.6f
-            )
+            Glyph(DnGlyph.SIREN, Color.White, size = 28.dp, strokeWidth = 2f)
         }
-        Spacer(Modifier.height(16.dp))
-        Text(
-            if (holding) "Sigue presionando…" else "Mantén presionado $totalSeconds s",
-            style = MaterialTheme.typography.labelLarge,
-            color = if (holding) colors.accent else colors.text.copy(alpha = 0.85f)
-        )
+        Spacer(Modifier.height(6.dp))
+        Text("¿Es una emergencia?", style = MaterialTheme.typography.titleSmall, color = colors.text)
         Spacer(Modifier.height(4.dp))
         Text(
-            when (weeklyUses) {
-                null -> " "
-                0 -> "Sin usos esta semana"
-                1 -> "Usado 1 vez esta semana"
-                else -> "Usado $weeklyUses veces esta semana"
-            },
+            listOfNotNull(
+                if (holding) "Sigue presionando…" else "Mantén presionado $totalSeconds s",
+                when (weeklyUses) {
+                    null -> null
+                    0 -> "sin usos esta semana"
+                    1 -> "1 uso esta semana"
+                    else -> "$weeklyUses usos esta semana"
+                }
+            ).joinToString(" · "),
             style = MaterialTheme.typography.bodySmall,
-            color = colors.textDim
+            color = if (holding) colors.text else colors.textDim,
+            textAlign = TextAlign.Center
         )
     }
 }
@@ -521,38 +585,48 @@ private fun PhraseCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .widthIn(max = 400.dp)
-            .background(Color(0xFF0A1428).copy(alpha = 0.85f), RoundedCornerShape(28.dp))
-            .border(1.dp, GlassEdge, RoundedCornerShape(28.dp))
-            .padding(20.dp)
+            .widthIn(max = 420.dp)
+            .background(CardInk.copy(alpha = 0.9f), RoundedCornerShape(26.dp))
+            .border(1.dp, GlassEdge, RoundedCornerShape(26.dp))
+            .padding(18.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier
-                    .size(36.dp)
-                    .background(colors.accent.copy(alpha = 0.14f), RoundedCornerShape(12.dp)),
+                    .size(38.dp)
+                    .background(SirenRed.copy(alpha = 0.16f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Glyph(DnGlyph.KEY, colors.accent, size = 20.dp)
+                Glyph(DnGlyph.LOCK, SirenRed, size = 18.dp, strokeWidth = 2.2f)
             }
             Spacer(Modifier.width(12.dp))
             Column {
                 Text("Último paso", style = MaterialTheme.typography.titleMedium, color = colors.text)
-                Text("Escribe exactamente la frase", style = MaterialTheme.typography.bodySmall, color = colors.textDim)
+                Text("Escribe la frase para abrir", style = MaterialTheme.typography.bodySmall, color = colors.textDim)
             }
         }
         Spacer(Modifier.height(16.dp))
         Text(
-            "“$requiredPhrase”",
-            style = MaterialTheme.typography.titleMedium,
+            requiredPhrase,
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.4.sp),
             color = colors.accent,
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .fillMaxWidth()
-                .background(colors.accent.copy(alpha = 0.08f), RoundedCornerShape(14.dp))
+                .drawBehind {
+                    drawRoundRect(
+                        colors.accent.copy(alpha = 0.06f),
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(12.dp.toPx())
+                    )
+                    drawRoundRect(
+                        colors.accent.copy(alpha = 0.35f),
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(12.dp.toPx()),
+                        style = Stroke(1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 4.dp.toPx())))
+                    )
+                }
                 .padding(vertical = 12.dp)
         )
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(12.dp))
         BasicTextField(
             value = typed,
             onValueChange = {
@@ -575,13 +649,13 @@ private fun PhraseCard(
                 Box(
                     Modifier
                         .fillMaxWidth()
-                        .background(colors.raised, RoundedCornerShape(16.dp))
+                        .background(Color.White.copy(alpha = 0.07f), RoundedCornerShape(14.dp))
                         .border(
                             1.dp,
-                            if (error) colors.danger else Color.White.copy(alpha = 0.10f),
-                            RoundedCornerShape(16.dp)
+                            if (error) colors.danger else Color.White.copy(alpha = 0.22f),
+                            RoundedCornerShape(14.dp)
                         )
-                        .padding(horizontal = 16.dp, vertical = 15.dp)
+                        .padding(horizontal = 16.dp, vertical = 14.dp)
                 ) {
                     if (typed.isEmpty()) {
                         Text("Escribe aquí", style = MaterialTheme.typography.bodyLarge, color = colors.textDim)
@@ -597,13 +671,20 @@ private fun PhraseCard(
         Spacer(Modifier.height(16.dp))
         DnPrimaryButton(label = "Confirmar desbloqueo", onClick = { submit() }, glyph = DnGlyph.CHECK)
         Spacer(Modifier.height(10.dp))
-        DnSecondaryButton(
-            label = "Cancelar",
-            onClick = {
-                keyboard?.hide()
-                onCancel()
-            },
-            tint = colors.textDim
-        )
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.10f), CircleShape)
+                .border(1.dp, Color.White.copy(alpha = 0.08f), CircleShape)
+                .clickable {
+                    keyboard?.hide()
+                    onCancel()
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Cancelar", style = MaterialTheme.typography.labelLarge, color = colors.text.copy(alpha = 0.8f))
+        }
     }
 }

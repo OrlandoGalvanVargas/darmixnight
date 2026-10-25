@@ -71,6 +71,8 @@ object OverlayManager {
         val compose = ComposeView(context).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
             setContent {
+                val startMinutes by remember { BlockPrefs.startMinutesFlow(appContext) }
+                    .collectAsState(initial = BlockPrefs.DEFAULT_START)
                 val endMinutes by remember { BlockPrefs.endMinutesFlow(appContext) }
                     .collectAsState(initial = BlockPrefs.DEFAULT_END)
                 DarmixNightTheme(darkTheme = true) {
@@ -78,6 +80,7 @@ object OverlayManager {
                         emergencyAllowed = emergencyAllowed,
                         holdDurationMs = HOLD_DURATION_MS,
                         requiredPhrase = REQUIRED_PHRASE,
+                        startMinutes = startMinutes,
                         endMinutes = endMinutes,
                         loadWeeklyUses = { EmergencyUnlockManager.weeklyUsageCountOnce(appContext) },
                         step = step.value,

@@ -49,6 +49,7 @@ private fun line(width: Float) = Stroke(width = width, cap = StrokeCap.Round, jo
 private object Art {
     val tuft by lazy { svg("M90 46 q3 -11 11 -5 q5 -9 11 1") }
     val shoulders by lazy { svg("M58 136 Q100 118 142 136 L140 146 Q100 130 60 146 Z") }
+    val yoke by lazy { svg("M57 152 C53 138 57 124 69 117 Q100 108 131 117 C143 124 147 138 143 152 Q100 134 57 152 Z") }
     val nose by lazy { svg("M94 106 q6 -3.5 12 0 q-1 6.5 -6 7.5 q-5 -1 -6 -7.5 Z") }
     val eyesHappy by lazy { svg("M72 96 q7 -8 14 0 M114 96 q7 -8 14 0") }
     val eyesClosed by lazy { svg("M72 92 q7 7 14 0 M114 92 q7 7 14 0") }
@@ -257,11 +258,11 @@ private fun DrawScope.nightcap(path: Path, tilt: Float, pompom: Offset, sway: Fl
     }
 }
 
-private fun DrawScope.body(breath: Float) {
+private fun DrawScope.body(breath: Float, armsUp: Boolean = false) {
     scale(1f + 0.012f * breath, 1f + 0.02f * breath, Offset(100f, 190f)) {
         oval(100f, 152f, 45f, 39f, Fur)
         ovalLine(100f, 152f, 45f, 39f, Ink, OUTLINE)
-        drawPath(Art.shoulders, Ink)
+        drawPath(if (armsUp) Art.yoke else Art.shoulders, Ink)
     }
 }
 
@@ -475,7 +476,7 @@ fun DrawScope.drawPanda(mood: PandaMood, motion: PandaMotion) {
                     val lift = -9f * yawn
                     rotate(-lift, Offset(64f, 136f)) { limb(Art.armUpL, motion.rim) }
                     rotate(lift, Offset(136f, 136f)) { limb(Art.armUpR, motion.rim) }
-                    body(breath)
+                    body(breath, armsUp = true)
                     feet(motion.rim)
                     val look = when {
                         awakeJoy -> Look(Eyes.HAPPY, Mouth.GRIN, blush = 0.8f)
@@ -506,7 +507,7 @@ fun DrawScope.drawPanda(mood: PandaMood, motion: PandaMotion) {
                     val wave = 6f * sin(t * 3f)
                     rotate(-wave, Offset(64f, 136f)) { limb(Art.armUpL, motion.rim) }
                     rotate(wave, Offset(136f, 136f)) { limb(Art.armUpR, motion.rim) }
-                    body(breath)
+                    body(breath, armsUp = true)
                     feet(motion.rim)
                     headGroup(
                         motion.rim, t,

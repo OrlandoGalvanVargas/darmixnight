@@ -1,31 +1,6 @@
 package com.darmix.darmixnight.ui.components
 
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathOperation
 import kotlin.random.Random
-
-object Crescent {
-    const val VIEWPORT = 108f
-    const val OUTER_RADIUS = 24f
-    private const val INNER_RADIUS = 20f
-    private const val INNER_DX = 9.5f
-    private const val INNER_DY = -8.5f
-
-    fun unitPath(): Path {
-        val outer = Path().apply { addOval(Rect(Offset.Zero, 1f)) }
-        val inner = Path().apply {
-            addOval(
-                Rect(
-                    Offset(INNER_DX / OUTER_RADIUS, INNER_DY / OUTER_RADIUS),
-                    INNER_RADIUS / OUTER_RADIUS
-                )
-            )
-        }
-        return Path().apply { op(outer, inner, PathOperation.Difference) }
-    }
-}
 
 class Star(
     val x: Float,

@@ -30,6 +30,13 @@ object EmergencyUnlockManager {
         }
     }
 
+    fun recentUsageTimestampsFlow(context: Context): Flow<List<Long>> {
+        return context.dataStore.data.map { prefs ->
+            val now = System.currentTimeMillis()
+            parseTimestamps(prefs[USAGE_TIMESTAMPS]).filter { now - it in 0..(SEVEN_DAYS_MS + SEVEN_DAYS_MS / 7) }
+        }
+    }
+
     suspend fun weeklyUsageCountOnce(context: Context): Int {
         return weeklyUsageCountFlow(context).first()
     }

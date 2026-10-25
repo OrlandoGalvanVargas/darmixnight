@@ -133,7 +133,7 @@ private fun AppRoot(onToggleTheme: () -> Unit) {
         if (status.readyForMain) {
             SetupPrefs.markSetupCompleted(context)
             if (!showMain) {
-                delay(1200)
+                delay(2500)
                 showMain = true
             }
         } else {
@@ -145,12 +145,18 @@ private fun AppRoot(onToggleTheme: () -> Unit) {
     AnimatedContent(
         targetState = showMain,
         transitionSpec = {
-            (fadeIn(tween(520, delayMillis = 120)) +
-                    scaleIn(tween(620, easing = FastOutSlowInEasing), initialScale = 0.96f))
-                .togetherWith(
-                    fadeOut(tween(320)) +
-                            scaleOut(tween(420, easing = FastOutSlowInEasing), targetScale = 1.04f)
-                )
+            if (targetState) {
+                (fadeIn(tween(700)) +
+                        scaleIn(tween(900, easing = FastOutSlowInEasing), initialScale = 1.08f))
+                    .togetherWith(fadeOut(tween(700, delayMillis = 150)))
+            } else {
+                (fadeIn(tween(520, delayMillis = 120)) +
+                        scaleIn(tween(620, easing = FastOutSlowInEasing), initialScale = 0.96f))
+                    .togetherWith(
+                        fadeOut(tween(320)) +
+                                scaleOut(tween(420, easing = FastOutSlowInEasing), targetScale = 1.04f)
+                    )
+            }
         },
         label = "gate"
     ) { main ->
