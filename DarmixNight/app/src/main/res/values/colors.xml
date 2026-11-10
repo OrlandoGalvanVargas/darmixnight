@@ -1,41 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="dn_night_bg_top">#FF13376C</color>
-    <color name="dn_night_bg">#FF0E1424</color>
-    <color name="dn_night_card">#FF151D33</color>
-    <color name="dn_night_raised">#FF1E2A46</color>
-    <color name="dn_night_text">#FFF4F0E1</color>
-    <color name="dn_night_text_dim">#FFA3ABBA</color>
-    <color name="dn_night_accent">#FFE8C796</color>
-    <color name="dn_night_on_accent">#FF171A27</color>
-    <color name="dn_night_accent_alt">#FF5BA8DE</color>
-    <color name="dn_night_glow">#FFF4E3BC</color>
-    <color name="dn_night_success">#FF78C8A6</color>
-    <color name="dn_night_warn">#FFE9A86A</color>
-    <color name="dn_night_danger">#FFEE8A8A</color>
-
-    <color name="dn_day_bg_top">#FFDCE6F3</color>
-    <color name="dn_day_bg">#FFF6F1E4</color>
-    <color name="dn_day_card">#FFFFFDF7</color>
-    <color name="dn_day_raised">#FFECE4D1</color>
-    <color name="dn_day_text">#FF171A27</color>
-    <color name="dn_day_text_dim">#FF5B5E6B</color>
-    <color name="dn_day_accent">#FF1D4C83</color>
-    <color name="dn_day_on_accent">#FFF4F0E1</color>
-    <color name="dn_day_accent_alt">#FF8A5A1F</color>
-    <color name="dn_day_glow">#FFE2C092</color>
-    <color name="dn_day_success">#FF256B4D</color>
-    <color name="dn_day_warn">#FF93500E</color>
-    <color name="dn_day_danger">#FFB23E4B</color>
-
-    <color name="dn_bg">@color/dn_day_bg</color>
-    <color name="dn_card">@color/dn_day_card</color>
-    <color name="dn_text">@color/dn_day_text</color>
-    <color name="dn_text_dim">@color/dn_day_text_dim</color>
-    <color name="dn_accent">@color/dn_day_accent</color>
-
-    <color name="dn_notification_accent">#FFC99A55</color>
-
+    <color name="dn_ink">#FF090403</color>
+    <color name="dn_bg">#FF0C0604</color>
+    <color name="dn_bg_top">#FF120906</color>
+    <color name="dn_surface">#FF150B07</color>
+    <color name="dn_cream">#FFF3E6D8</color>
+    <color name="dn_dim">#FF8A7062</color>
+    <color name="dn_ember">#FFFF8A4C</color>
+    <color name="dn_amber">#FFFFB067</color>
+    <color name="dn_flame">#FFFFD596</color>
+    <color name="dn_danger">#FFFF6B5A</color>
+    <color name="dn_notification_accent">#FFFF8A4C</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 </resources>
