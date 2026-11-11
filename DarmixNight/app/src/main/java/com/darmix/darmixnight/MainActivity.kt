@@ -1,8 +1,10 @@
 package com.darmix.darmixnight
 
 import android.content.Intent
+import android.graphics.Color as AndroidColor
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContent
@@ -14,12 +16,10 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,12 +27,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
-import androidx.lifecycle.lifecycleScope
 import com.darmix.darmixnight.ui.main.MainScreen
 import com.darmix.darmixnight.ui.permissions.PermissionGate
 import com.darmix.darmixnight.ui.splash.NightIntro
@@ -41,19 +38,17 @@ import com.darmix.darmixnight.ui.theme.DnTheme
 import com.darmix.darmixnight.ui.update.UpdateHost
 import com.darmix.darmixnight.update.UpdateManager
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-
-    private var themeReady by mutableStateOf(false)
-    private var storedDark by mutableStateOf<Boolean?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splash = installSplashScreen()
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT)
+        )
 
-        splash.setKeepOnScreenCondition { !themeReady }
         splash.setOnExitAnimationListener { provider ->
             provider.view.animate()
                 .alpha(0f)
@@ -64,46 +59,22 @@ class MainActivity : ComponentActivity() {
 
         ContextCompat.startForegroundService(this, Intent(this, KeepAliveService::class.java))
 
-        lifecycleScope.launch {
-            ThemePrefs.darkModeFlow(applicationContext).collect {
-                storedDark = it
-                themeReady = true
-            }
-        }
-
         val playIntro = savedInstanceState == null
         if (savedInstanceState == null) UpdateManager.checkOnLaunch(this)
 
         setContent {
-            val systemDark = isSystemInDarkTheme()
-            val darkTheme = storedDark ?: systemDark
             var introVisible by rememberSaveable { mutableStateOf(playIntro) }
 
-            val view = LocalView.current
-            val lightBars = !darkTheme && !introVisible
-            SideEffect {
-                WindowCompat.getInsetsController(window, view).apply {
-                    isAppearanceLightStatusBars = lightBars
-                    isAppearanceLightNavigationBars = lightBars
-                }
-            }
-
-            DarmixNightTheme(darkTheme = darkTheme) {
+            DarmixNightTheme {
                 Box(
                     Modifier
                         .fillMaxSize()
                         .background(DnTheme.colors.bg)
                 ) {
-                    AppRoot(
-                        onToggleTheme = {
-                            lifecycleScope.launch {
-                                ThemePrefs.setDarkMode(applicationContext, !darkTheme)
-                            }
-                        }
-                    )
+                    AppRoot()
                     if (introVisible) {
                         NightIntro(
-                            start = themeReady,
+                            start = true,
                             onFinished = { introVisible = false }
                         )
                     } else {
@@ -116,7 +87,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun AppRoot(onToggleTheme: () -> Unit) {
+private fun AppRoot() {
     val context = LocalContext.current
     var status by remember { mutableStateOf(PermissionUtils.checkAll(context)) }
     val refresh = { status = PermissionUtils.checkAll(context) }
@@ -161,13 +132,13 @@ private fun AppRoot(onToggleTheme: () -> Unit) {
         label = "gate"
     ) { main ->
         if (main) {
-            MainScreen(onToggleTheme = onToggleTheme)
+            MainScreen()
         } else {
             PermissionGate(
                 status = status,
                 revoked = revoked,
                 onRefresh = refresh,
-                onToggleTheme = onToggleTheme
+                onEnter = { showMain = true }
             )
         }
     }

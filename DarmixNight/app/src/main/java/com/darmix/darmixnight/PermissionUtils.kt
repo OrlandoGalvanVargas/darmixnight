@@ -26,6 +26,7 @@ data class PermissionStatus(
     val restriction: RestrictionState = RestrictionState.NONE,
     val restrictionApplies: Boolean = false,
     val restrictionAcknowledgedByUser: Boolean = false,
+    val restrictionTried: Boolean = false,
     val xiaomiRequired: Boolean = false,
     val xiaomiDone: Boolean = false
 ) {
@@ -54,6 +55,8 @@ object PermissionUtils {
     private const val ACTION_ACCESSIBILITY_DETAILS_SETTINGS = "android.settings.ACCESSIBILITY_DETAILS_SETTINGS"
     private const val SETTINGS_FRAGMENT_ARGS_KEY = ":settings:fragment_args_key"
     private const val SETTINGS_SHOW_FRAGMENT_ARGS = ":settings:show_fragment_args"
+    private const val FLOW_PREFS = "darmixnight_permission_flow"
+    private const val KEY_RESTRICTION_TRIED = "restriction_tried"
 
     fun checkAll(context: Context): PermissionStatus {
         val restriction = restrictedSettingsState(context)
@@ -68,10 +71,18 @@ object PermissionUtils {
                     restriction == RestrictionState.ACKNOWLEDGED ||
                     isInstalledFromFile(context),
             restrictionAcknowledgedByUser = SetupPrefs.isRestrictionAcknowledged(context),
+            restrictionTried = restriction == RestrictionState.ACKNOWLEDGED || isRestrictionTried(context),
             xiaomiRequired = isXiaomiFamily(),
             xiaomiDone = SetupPrefs.isXiaomiAutostartDone(context)
         )
     }
+
+    fun markRestrictionTried(context: Context) {
+        context.getSharedPreferences(FLOW_PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_RESTRICTION_TRIED, true).apply()
+    }
+
+    private fun isRestrictionTried(context: Context): Boolean =
+        context.getSharedPreferences(FLOW_PREFS, Context.MODE_PRIVATE).getBoolean(KEY_RESTRICTION_TRIED, false)
 
     fun isAccessibilityServiceEnabled(context: Context): Boolean {
         val expectedComponent = ComponentName(context, BlockAccessibilityService::class.java)
@@ -202,6 +213,10 @@ object PermissionUtils {
             Uri.parse("package:${context.packageName}")
         )
     }
+
+    fun appListSettingsIntent(): Intent = Intent(Settings.ACTION_MANAGE_APPLICATIONS_SETTINGS)
+
+    fun allAppsSettingsIntent(): Intent = Intent(Settings.ACTION_APPLICATION_SETTINGS)
 
     fun xiaomiAutoStartIntent(context: Context): Intent {
         val intent = Intent().apply {
