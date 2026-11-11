@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -34,7 +33,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextAlign
@@ -42,20 +40,32 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.darmix.darmixnight.ui.components.DnGlyph
-import com.darmix.darmixnight.ui.components.DnPrimaryButton
-import com.darmix.darmixnight.ui.components.DnSecondaryButton
+import com.darmix.darmixnight.ui.components.EmberButton
+import com.darmix.darmixnight.ui.components.QuietLink
 import com.darmix.darmixnight.ui.components.Glyph
 import com.darmix.darmixnight.ui.theme.DnTheme
 import com.darmix.darmixnight.ui.theme.DnType
+import com.darmix.darmixnight.ui.theme.InstrumentSerif
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.withStyle
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 private val ItemHeight = 46.dp
 private const val VISIBLE_ITEMS = 5
 
+private val WheelStyle = TextStyle(
+    fontFamily = InstrumentSerif,
+    fontSize = 30.sp,
+    lineHeight = 34.sp
+)
+
 private val Hours = (1..12).map { it.toString() }
 private val Minutes = (0..59).map { "%02d".format(it) }
-private val Periods = listOf("AM", "PM")
+private val Periods = listOf("am", "pm")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,7 +105,7 @@ fun TimeWheelSheet(
                     .padding(top = 12.dp, bottom = 4.dp)
                     .width(40.dp)
                     .height(4.dp)
-                    .background(colors.textDim.copy(alpha = 0.35f), RoundedCornerShape(2.dp))
+                    .background(colors.hairline, RoundedCornerShape(2.dp))
             )
         }
     ) {
@@ -106,26 +116,32 @@ fun TimeWheelSheet(
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 20.dp)
         ) {
+            val tone = if (isStart) colors.ember else colors.amber
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Glyph(
                     if (isStart) DnGlyph.MOON else DnGlyph.SUN,
-                    if (isStart) colors.accentAlt else colors.accent,
-                    size = 22.dp
+                    tone,
+                    size = 18.dp,
+                    strokeWidth = 2f
                 )
                 Spacer(Modifier.width(10.dp))
                 Text(
-                    if (isStart) "INICIO DEL DESCANSO" else "FIN DEL DESCANSO",
-                    style = DnType.overline,
-                    color = colors.textDim
+                    if (isStart) "Me duermo a las" else "Despierto a las",
+                    style = DnType.lead.copy(fontSize = 22.sp),
+                    color = tone
                 )
             }
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(10.dp))
             Text(
-                TimeText.full(picked),
-                style = MaterialTheme.typography.headlineMedium,
+                buildAnnotatedString {
+                    append(TimeText.hour(picked))
+                    withStyle(SpanStyle(fontStyle = FontStyle.Italic, fontSize = 22.sp, color = tone)) {
+                        append("\u2009" + TimeText.period(picked).lowercase())
+                    }
+                },
+                style = DnType.timeLarge.copy(fontSize = 56.sp, lineHeight = 56.sp),
                 color = colors.text
             )
-
             Spacer(Modifier.height(16.dp))
 
             Box(
@@ -134,19 +150,28 @@ fun TimeWheelSheet(
                     .height(ItemHeight * VISIBLE_ITEMS),
                 contentAlignment = Alignment.Center
             ) {
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(ItemHeight)
-                        .background(colors.raised, RoundedCornerShape(16.dp))
-                )
+                Column(Modifier.fillMaxWidth()) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(colors.hairline)
+                    )
+                    Spacer(Modifier.height(ItemHeight - 2.dp))
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(colors.hairline)
+                    )
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Wheel(Hours, hourIndex, width = 76.dp) { hourIndex = it }
-                    Text(":", style = DnType.clockMedium, color = colors.textDim)
+                    Text(":", style = WheelStyle.copy(fontSize = 30.sp), color = colors.textDim)
                     Wheel(Minutes, minuteIndex, width = 76.dp) { minuteIndex = it }
                     Spacer(Modifier.width(12.dp))
                     Wheel(Periods, periodIndex, width = 64.dp) { periodIndex = it }
@@ -170,24 +195,23 @@ fun TimeWheelSheet(
             Text(
                 text = if (invalid) "El inicio y el fin no pueden ser la misma hora."
                 else "Descanso de ${TimeText.span(duration)}",
-                style = MaterialTheme.typography.bodyMedium,
+                style = DnType.note.copy(fontSize = 19.sp),
                 color = if (invalid) colors.danger else colors.textDim,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(Modifier.height(18.dp))
 
-            DnPrimaryButton(
+            EmberButton(
                 label = "Guardar",
                 enabled = !invalid,
-                glyph = DnGlyph.CHECK,
                 onClick = { close { onConfirm(picked) } }
             )
-            Spacer(Modifier.height(10.dp))
-            DnSecondaryButton(
+            Spacer(Modifier.height(4.dp))
+            QuietLink(
                 label = "Cancelar",
-                tint = colors.textDim,
-                onClick = { close(onDismiss) }
+                onClick = { close(onDismiss) },
+                modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         }
     }
@@ -240,13 +264,14 @@ private fun Wheel(
             ) {
                 Text(
                     text = label,
-                    style = DnType.clockMedium.copy(
-                        fontSize = if (distance == 0) 28.sp else 22.sp
+                    style = WheelStyle.copy(
+                        fontSize = if (distance == 0) 30.sp else 22.sp,
+                        fontStyle = if (items === Periods) FontStyle.Italic else FontStyle.Normal
                     ),
                     color = when (distance) {
                         0 -> colors.text
-                        1 -> colors.textDim
-                        else -> colors.textDim.copy(alpha = 0.45f)
+                        1 -> colors.clayDim
+                        else -> colors.textMute.copy(alpha = 0.6f)
                     }
                 )
             }
