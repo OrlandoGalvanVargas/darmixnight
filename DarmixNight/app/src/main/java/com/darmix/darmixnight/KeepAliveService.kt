@@ -320,7 +320,7 @@ class KeepAliveService : Service() {
                 )
             )
             .setSmallIcon(R.drawable.ic_stat_darmixnight)
-            .setColor(ContextCompat.getColor(this, R.color.dn_day_danger))
+            .setColor(ContextCompat.getColor(this, R.color.dn_danger))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(Notification.CATEGORY_ERROR)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
