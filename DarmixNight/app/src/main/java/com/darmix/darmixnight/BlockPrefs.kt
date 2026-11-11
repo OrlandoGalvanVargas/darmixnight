@@ -22,6 +22,8 @@ object BlockPrefs {
 
     private val EMERGENCY_DURATION_MINUTES = intPreferencesKey("emergency_duration_minutes")
     const val DEFAULT_EMERGENCY_DURATION_MINUTES = 10
+    const val EMERGENCY_MIN_MINUTES = 1
+    const val EMERGENCY_MAX_MINUTES = 30
 
     fun startMinutesFlow(context: Context): Flow<Int> =
         context.dataStore.data.map { it[START_MINUTES] ?: DEFAULT_START }
@@ -46,10 +48,15 @@ object BlockPrefs {
     }
 
     fun emergencyDurationMinutesFlow(context: Context): Flow<Int> =
-        context.dataStore.data.map { it[EMERGENCY_DURATION_MINUTES] ?: DEFAULT_EMERGENCY_DURATION_MINUTES }
+        context.dataStore.data.map {
+            (it[EMERGENCY_DURATION_MINUTES] ?: DEFAULT_EMERGENCY_DURATION_MINUTES)
+                .coerceIn(EMERGENCY_MIN_MINUTES, EMERGENCY_MAX_MINUTES)
+        }
 
     suspend fun setEmergencyDurationMinutes(context: Context, minutes: Int) {
-        context.dataStore.edit { it[EMERGENCY_DURATION_MINUTES] = minutes }
+        context.dataStore.edit {
+            it[EMERGENCY_DURATION_MINUTES] = minutes.coerceIn(EMERGENCY_MIN_MINUTES, EMERGENCY_MAX_MINUTES)
+        }
     }
 
     fun getEmergencyDurationMinutesBlocking(context: Context): Int = runBlocking {
@@ -57,11 +64,27 @@ object BlockPrefs {
     }
 
     private val SERVICE_PAUSED = booleanPreferencesKey("service_paused")
+    private val DIAL_SOUND = booleanPreferencesKey("dial_tick_sound")
+    private val DIAL_VIBRATION = booleanPreferencesKey("dial_tick_vibration")
 
     fun servicePausedFlow(context: Context): Flow<Boolean> =
         context.dataStore.data.map { it[SERVICE_PAUSED] ?: false }
 
     suspend fun setServicePaused(context: Context, paused: Boolean) {
         context.dataStore.edit { it[SERVICE_PAUSED] = paused }
+    }
+
+    fun dialSoundFlow(context: Context): Flow<Boolean> =
+        context.dataStore.data.map { it[DIAL_SOUND] ?: true }
+
+    suspend fun setDialSound(context: Context, enabled: Boolean) {
+        context.dataStore.edit { it[DIAL_SOUND] = enabled }
+    }
+
+    fun dialVibrationFlow(context: Context): Flow<Boolean> =
+        context.dataStore.data.map { it[DIAL_VIBRATION] ?: true }
+
+    suspend fun setDialVibration(context: Context, enabled: Boolean) {
+        context.dataStore.edit { it[DIAL_VIBRATION] = enabled }
     }
 }

@@ -75,7 +75,7 @@ object OverlayManager {
                     .collectAsState(initial = BlockPrefs.DEFAULT_START)
                 val endMinutes by remember { BlockPrefs.endMinutesFlow(appContext) }
                     .collectAsState(initial = BlockPrefs.DEFAULT_END)
-                DarmixNightTheme(darkTheme = true) {
+                DarmixNightTheme {
                     BlockScreen(
                         emergencyAllowed = emergencyAllowed,
                         holdDurationMs = HOLD_DURATION_MS,
