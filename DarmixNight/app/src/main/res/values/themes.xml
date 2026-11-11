@@ -10,7 +10,7 @@
 
     <style name="Theme.DarmixNight.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/dn_bg</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/dn_splash_moon</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/dn_splash_blank</item>
         <item name="postSplashScreenTheme">@style/Theme.DarmixNight</item>
     </style>
 
