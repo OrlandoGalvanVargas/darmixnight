@@ -12,8 +12,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 
 @Immutable
@@ -21,80 +19,46 @@ data class DnColors(
     val bgTop: Color,
     val bg: Color,
     val card: Color,
-    val raised: Color,
     val text: Color,
     val textDim: Color,
-    val accent: Color,
-    val onAccent: Color,
-    val accentAlt: Color,
-    val glow: Color,
-    val success: Color,
-    val warn: Color,
     val danger: Color,
-    val outline: Color,
-    val isDark: Boolean,
     val ink: Color,
     val umber: Color,
     val hairline: Color,
-    val hairlineSoft: Color,
     val textSoft: Color,
     val clay: Color,
     val clayDim: Color,
     val textMute: Color,
     val ash: Color,
     val ember: Color,
-    val emberDeep: Color,
-    val emberCore: Color,
     val amber: Color,
-    val gold: Color,
     val flame: Color,
-    val whiteHot: Color,
-    val bronze: Color,
-    val bronzeDark: Color
+    val bronze: Color
 )
 
 val BrasaColors = DnColors(
     bgTop = BrasaBgTop,
     bg = BrasaBg,
     card = BrasaSurface,
-    raised = BrasaRaised,
     text = BrasaCream,
     textDim = BrasaDim,
-    accent = BrasaEmber,
-    onAccent = BrasaInk,
-    accentAlt = BrasaAmber,
-    glow = BrasaFlame,
-    success = BrasaSage,
-    warn = BrasaAmber,
     danger = BrasaDanger,
-    outline = BrasaHairline,
-    isDark = true,
     ink = BrasaInk,
     umber = BrasaUmber,
     hairline = BrasaHairline,
-    hairlineSoft = BrasaHairlineSoft,
     textSoft = BrasaCreamSoft,
     clay = BrasaClay,
     clayDim = BrasaClayDim,
     textMute = BrasaMute,
     ash = BrasaAsh,
     ember = BrasaEmber,
-    emberDeep = BrasaEmberDeep,
-    emberCore = BrasaEmberCore,
     amber = BrasaAmber,
-    gold = BrasaGold,
     flame = BrasaFlame,
-    whiteHot = BrasaWhiteHot,
-    bronze = BrasaBronze,
-    bronzeDark = BrasaBronzeDark
+    bronze = BrasaBronze
 )
 
 @Immutable
-class DnScale(val factor: Float) {
-    fun dp(value: Float): Dp = (value * factor).dp
-    fun dp(value: Int): Dp = (value * factor).dp
-    fun sp(value: TextUnit): TextUnit = value * factor
-}
+class DnScale(val factor: Float)
 
 val LocalDnColors = staticCompositionLocalOf { BrasaColors }
 val LocalDnScale = staticCompositionLocalOf { DnScale(1f) }
@@ -141,7 +105,6 @@ private val BrasaScheme = darkColorScheme(
     inverseOnSurface = BrasaInk,
     error = BrasaDanger,
     onError = BrasaInk,
-    outline = BrasaDim,
     outlineVariant = BrasaHairline,
     scrim = Color.Black
 )

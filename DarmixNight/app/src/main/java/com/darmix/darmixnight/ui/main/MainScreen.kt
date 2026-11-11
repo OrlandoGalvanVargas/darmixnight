@@ -4,21 +4,18 @@ import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,36 +25,31 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.darmix.darmixnight.BlockPrefs
-import com.darmix.darmixnight.EmergencyUnlockManager
 import com.darmix.darmixnight.KeepAliveService
 import com.darmix.darmixnight.ScheduleUtils
-import com.darmix.darmixnight.SetupPrefs
+import com.darmix.darmixnight.ui.main.emergency.EmergencyScene
 import com.darmix.darmixnight.ui.main.emergency.EmergencyTab
+import com.darmix.darmixnight.ui.main.night.NightScene
 import com.darmix.darmixnight.ui.main.night.NightTab
+import com.darmix.darmixnight.ui.main.night.nightModeOf
 import com.darmix.darmixnight.ui.main.settings.PauseDialog
+import com.darmix.darmixnight.ui.main.settings.SettingsScene
 import com.darmix.darmixnight.ui.main.settings.SettingsTab
 import com.darmix.darmixnight.ui.components.SkyBackdrop
-import com.darmix.darmixnight.ui.theme.DnTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-private val TabContentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 120.dp)
-
 @Composable
-fun MainScreen(
-    onToggleTheme: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+fun MainScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val colors = DnTheme.colors
 
     val startMinutes by remember(context) { BlockPrefs.startMinutesFlow(context) }
         .collectAsStateWithLifecycle(initialValue = BlockPrefs.DEFAULT_START)
@@ -65,10 +57,12 @@ fun MainScreen(
         .collectAsStateWithLifecycle(initialValue = BlockPrefs.DEFAULT_END)
     val emergencyMinutes by remember(context) { BlockPrefs.emergencyDurationMinutesFlow(context) }
         .collectAsStateWithLifecycle(initialValue = BlockPrefs.DEFAULT_EMERGENCY_DURATION_MINUTES)
-    val usageTimestamps by remember(context) { EmergencyUnlockManager.recentUsageTimestampsFlow(context) }
-        .collectAsStateWithLifecycle(initialValue = emptyList())
     val paused by remember(context) { BlockPrefs.servicePausedFlow(context) }
         .collectAsStateWithLifecycle(initialValue = false)
+    val dialSound by remember(context) { BlockPrefs.dialSoundFlow(context) }
+        .collectAsStateWithLifecycle(initialValue = true)
+    val dialVibration by remember(context) { BlockPrefs.dialVibrationFlow(context) }
+        .collectAsStateWithLifecycle(initialValue = true)
 
     var now by remember { mutableIntStateOf(ScheduleUtils.currentMinutesOfDay()) }
     LaunchedEffect(Unit) {
@@ -82,18 +76,15 @@ fun MainScreen(
     val editable = !inBlockWindow
 
     var tab by rememberSaveable { mutableStateOf(MainTab.NIGHT) }
+    val nightMode = nightModeOf(now, startMinutes, endMinutes, paused)
+    val nightAlpha by animateFloatAsState(if (tab == MainTab.NIGHT) 1f else 0f, tween(450), label = "nightScene")
+    val emergencyAlpha by animateFloatAsState(if (tab == MainTab.EMERGENCY) 1f else 0f, tween(450), label = "emergencyScene")
+    val settingsAlpha by animateFloatAsState(if (tab == MainTab.SETTINGS) 1f else 0f, tween(450), label = "settingsScene")
     var sheetFor by remember { mutableStateOf<ScheduleEdge?>(null) }
     var askPause by remember { mutableStateOf(false) }
 
     BackHandler(enabled = tab != MainTab.NIGHT) { tab = MainTab.NIGHT }
 
-    var showGuide by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        if (!SetupPrefs.isGuideSeen(context)) {
-            delay(900L)
-            showGuide = true
-        }
-    }
 
     val saveSchedule: (Int, Int) -> Unit = { s, e ->
         if (s != e) {
@@ -112,74 +103,87 @@ fun MainScreen(
     }
 
     SkyBackdrop(modifier = modifier) {
-        Box(
-            Modifier
-                .fillMaxSize()
-                .safeDrawingPadding()
-        ) {
-            Column(Modifier.fillMaxSize()) {
-                MainHeader(
-                    onToggleTheme = onToggleTheme,
-                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp)
-                )
+        if (nightAlpha > 0f) {
+            NightScene(
+                mode = nightMode,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = nightAlpha }
+            )
+        }
+        if (emergencyAlpha > 0f) {
+            EmergencyScene(
+                mode = nightMode,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = emergencyAlpha }
+            )
+        }
+        if (settingsAlpha > 0f) {
+            SettingsScene(
+                mode = nightMode,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = settingsAlpha }
+            )
+        }
+        Column(Modifier.fillMaxSize()) {
+            MainHeader(
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .padding(start = 24.dp, end = 24.dp, top = 8.dp)
+            )
 
-                AnimatedContent(
-                    targetState = tab,
-                    transitionSpec = {
-                        val direction = if (targetState.ordinal > initialState.ordinal) 1 else -1
-                        (slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { it / 6 * direction } +
-                                fadeIn(tween(320, delayMillis = 60))) togetherWith
-                                (slideOutHorizontally(tween(320, easing = FastOutSlowInEasing)) { -it / 8 * direction } +
-                                        fadeOut(tween(180)))
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    label = "mainTabs"
-                ) { current ->
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .padding(TabContentPadding)
-                    ) {
-                        when (current) {
-                            MainTab.NIGHT -> NightTab(
-                                startMinutes = startMinutes,
-                                endMinutes = endMinutes,
-                                paused = paused,
-                                editable = editable,
-                                onPick = { sheetFor = it }
-                            )
-                            MainTab.EMERGENCY -> EmergencyTab(
-                                usageTimestamps = usageTimestamps,
-                                durationMinutes = emergencyMinutes,
-                                now = now,
-                                startMinutes = startMinutes,
-                                endMinutes = endMinutes,
-                                paused = paused,
-                                editable = editable,
-                                onChangeDuration = { m ->
-                                    scope.launch { BlockPrefs.setEmergencyDurationMinutes(context, m) }
-                                }
-                            )
-                            MainTab.SETTINGS -> SettingsTab(
-                                paused = paused,
-                                canToggle = editable,
-                                resumesAt = endMinutes,
-                                onToggle = { if (paused) setPaused(false) else askPause = true }
-                            )
-                        }
-                    }
+            AnimatedContent(
+                targetState = tab,
+                transitionSpec = {
+                    val direction = if (targetState.ordinal > initialState.ordinal) 1 else -1
+                    (slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { it / 6 * direction } +
+                            fadeIn(tween(320, delayMillis = 60))) togetherWith
+                            (slideOutHorizontally(tween(320, easing = FastOutSlowInEasing)) { -it / 8 * direction } +
+                                    fadeOut(tween(180)))
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                label = "mainTabs"
+            ) { current ->
+                when (current) {
+                    MainTab.NIGHT -> NightTab(
+                        startMinutes = startMinutes,
+                        endMinutes = endMinutes,
+                        paused = paused,
+                        editable = editable,
+                        onPick = { sheetFor = it },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    MainTab.EMERGENCY -> EmergencyTab(
+                        durationMinutes = emergencyMinutes,
+                        mode = nightMode,
+                        tickSound = dialSound,
+                        tickHaptics = dialVibration,
+                        onChangeDuration = { m ->
+                            scope.launch { BlockPrefs.setEmergencyDurationMinutes(context, m) }
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    MainTab.SETTINGS -> SettingsTab(
+                        paused = paused,
+                        canToggle = editable,
+                        resumesAt = endMinutes,
+                        soundOn = dialSound,
+                        vibrationOn = dialVibration,
+                        onToggle = { if (paused) setPaused(false) else askPause = true },
+                        onSound = { value -> scope.launch { BlockPrefs.setDialSound(context, value) } },
+                        onVibration = { value -> scope.launch { BlockPrefs.setDialVibration(context, value) } },
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
             }
 
-            MoonDock(
+            NightBar(
                 selected = tab,
-                onSelect = { tab = it },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(start = 20.dp, end = 20.dp, bottom = 14.dp)
+                onSelect = { tab = it }
             )
         }
     }
@@ -194,17 +198,6 @@ fun MainScreen(
             onConfirm = { m ->
                 if (edge == ScheduleEdge.START) saveSchedule(m, endMinutes) else saveSchedule(startMinutes, m)
                 sheetFor = null
-            }
-        )
-    }
-
-    if (showGuide) {
-        WelcomeGuide(
-            startMinutes = startMinutes,
-            endMinutes = endMinutes,
-            onDone = {
-                SetupPrefs.setGuideSeen(context, true)
-                showGuide = false
             }
         )
     }

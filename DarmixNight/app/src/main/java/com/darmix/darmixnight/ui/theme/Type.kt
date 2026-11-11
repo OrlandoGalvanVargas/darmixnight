@@ -22,24 +22,6 @@ val InterTight = FontFamily(
     Font(R.font.inter_tight_semibold, FontWeight.SemiBold)
 )
 
-val PlexMono = FontFamily(
-    Font(R.font.plex_mono_regular, FontWeight.Normal),
-    Font(R.font.plex_mono_medium, FontWeight.Medium)
-)
-
-val Sora = FontFamily(
-    Font(R.font.sora_light, FontWeight.Light),
-    Font(R.font.sora_semibold, FontWeight.SemiBold),
-    Font(R.font.sora_bold, FontWeight.Bold)
-)
-
-val Manrope = FontFamily(
-    Font(R.font.manrope_regular, FontWeight.Normal),
-    Font(R.font.manrope_medium, FontWeight.Medium),
-    Font(R.font.manrope_semibold, FontWeight.SemiBold),
-    Font(R.font.manrope_bold, FontWeight.Bold)
-)
-
 private val Tight = LineHeightStyle(
     alignment = LineHeightStyle.Alignment.Center,
     trim = LineHeightStyle.Trim.Both
@@ -89,12 +71,6 @@ object DnType {
         letterSpacing = (-0.035).em,
         lineHeightStyle = Tight
     )
-    val countdownUnit = TextStyle(
-        fontFamily = InstrumentSerif,
-        fontStyle = FontStyle.Italic,
-        fontSize = 46.sp,
-        lineHeight = 46.sp
-    )
     val lead = TextStyle(
         fontFamily = InstrumentSerif,
         fontStyle = FontStyle.Italic,
@@ -114,13 +90,6 @@ object DnType {
         fontSize = 15.sp,
         lineHeight = 18.sp
     )
-    val statement = TextStyle(
-        fontFamily = InstrumentSerif,
-        fontSize = 84.sp,
-        lineHeight = 76.sp,
-        letterSpacing = (-0.03).em,
-        lineHeightStyle = Tight
-    )
     val timeLarge = TextStyle(
         fontFamily = InstrumentSerif,
         fontSize = 68.sp,
@@ -128,41 +97,11 @@ object DnType {
         letterSpacing = (-0.03).em,
         lineHeightStyle = Tight
     )
-    val timeUnit = TextStyle(
-        fontFamily = InstrumentSerif,
-        fontStyle = FontStyle.Italic,
-        fontSize = 24.sp,
-        lineHeight = 24.sp
-    )
-    val dialNumber = TextStyle(
-        fontFamily = InstrumentSerif,
-        fontSize = 18.sp,
-        lineHeight = 18.sp
-    )
-    val label = TextStyle(
-        fontFamily = InterTight,
-        fontWeight = FontWeight.Medium,
-        fontSize = 15.sp,
-        lineHeight = 20.sp
-    )
-    val caption = TextStyle(
-        fontFamily = InterTight,
-        fontWeight = FontWeight.Normal,
-        fontSize = 12.5.sp,
-        lineHeight = 17.sp
-    )
     val navLabel = TextStyle(
         fontFamily = InterTight,
         fontWeight = FontWeight.Medium,
         fontSize = 12.sp,
         lineHeight = 14.sp
-    )
-    val mono = TextStyle(
-        fontFamily = PlexMono,
-        fontWeight = FontWeight.Normal,
-        fontSize = 10.sp,
-        lineHeight = 12.sp,
-        letterSpacing = 0.14.em
     )
     val brand = TextStyle(
         fontFamily = InterTight,
@@ -176,44 +115,5 @@ object DnType {
         fontStyle = FontStyle.Italic,
         fontSize = 23.sp,
         lineHeight = 24.sp
-    )
-
-    val clock = TextStyle(
-        fontFamily = Sora,
-        fontWeight = FontWeight.Light,
-        fontSize = 64.sp,
-        lineHeight = 66.sp,
-        letterSpacing = (-2).sp,
-        fontFeatureSettings = "tnum"
-    )
-    val clockMedium = TextStyle(
-        fontFamily = Sora,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 30.sp,
-        lineHeight = 34.sp,
-        letterSpacing = (-1).sp,
-        fontFeatureSettings = "tnum"
-    )
-    val wordmark = TextStyle(
-        fontFamily = Sora,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 34.sp,
-        lineHeight = 40.sp,
-        letterSpacing = (-0.6).sp
-    )
-    val overline = TextStyle(
-        fontFamily = Manrope,
-        fontWeight = FontWeight.Bold,
-        fontSize = 11.sp,
-        lineHeight = 14.sp,
-        letterSpacing = 2.sp
-    )
-    val numeric = TextStyle(
-        fontFamily = Sora,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 28.sp,
-        lineHeight = 32.sp,
-        letterSpacing = (-0.5).sp,
-        fontFeatureSettings = "tnum"
     )
 }
