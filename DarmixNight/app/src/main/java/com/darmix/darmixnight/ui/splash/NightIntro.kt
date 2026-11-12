@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.requiredWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
@@ -31,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -44,6 +46,7 @@ import com.darmix.darmixnight.ui.theme.BrasaCream
 import com.darmix.darmixnight.ui.theme.BrasaEmber
 import com.darmix.darmixnight.ui.theme.DarmixNightTheme
 import com.darmix.darmixnight.ui.theme.DnType
+import com.darmix.darmixnight.update.UpdateRepository
 import kotlinx.coroutines.launch
 
 private const val INTRO_MILLIS = 3200
@@ -69,6 +72,8 @@ fun NightIntro(
     var done by remember { mutableStateOf(false) }
     var skipping by remember { mutableStateOf(false) }
     var lampOff by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val version = remember { UpdateRepository.installedVersion(context) }
 
     fun complete() {
         if (!done) {
@@ -125,7 +130,17 @@ fun NightIntro(
                 progress = progress,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = maxHeight * 0.17f)
+                    .padding(bottom = maxHeight * 0.25f)
+            )
+            Text(
+                "versión $version",
+                style = DnType.noteSmall.copy(fontSize = 15.sp, lineHeight = 18.sp),
+                color = BrasaClayDim.copy(alpha = 0.7f),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = 22.dp)
+                    .graphicsLayer { alpha = Smooth.transform(segment(progress.value, 0.6f, 0.76f)) }
             )
         }
     }
