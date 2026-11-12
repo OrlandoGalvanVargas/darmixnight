@@ -13,7 +13,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
@@ -48,6 +49,8 @@ import kotlinx.coroutines.launch
 private const val INTRO_MILLIS = 3200
 private const val LAMP_OFF_AT = 0.16f
 private const val EXIT_START = 0.84f
+private const val ROOM_ASPECT = 1402f / 1122f
+private const val SCENE_SHARE = 0.66f
 
 private val Smooth = CubicBezierEasing(0.22f, 1f, 0.36f, 1f)
 
@@ -108,20 +111,21 @@ fun NightIntro(
                     alpha = Smooth.transform(segment(p, 0f, 0.12f)) * (1f - segment(p, EXIT_START, 1f))
                 }
         ) {
-            val sceneTop = (maxHeight - maxWidth * 1.25f) / 2f - 40.dp
+            val sceneWidth = maxOf(maxWidth, maxHeight * SCENE_SHARE / ROOM_ASPECT)
             SkyBackdrop(Modifier.fillMaxSize()) {
                 NightScene(
                     mode = if (lampOff) NightMode.BLOCKING else NightMode.BEFORE,
                     modifier = Modifier
-                        .fillMaxSize()
-                        .offset(y = sceneTop.coerceAtLeast(0.dp))
+                        .align(Alignment.TopCenter)
+                        .requiredWidth(sceneWidth)
+                        .fillMaxHeight()
                 )
             }
             Wordmark(
                 progress = progress,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = maxHeight * 0.2f)
+                    .padding(bottom = maxHeight * 0.17f)
             )
         }
     }
