@@ -130,7 +130,7 @@ fun NightIntro(
                 progress = progress,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = maxHeight * 0.25f)
+                    .padding(bottom = maxHeight * 0.40f)
             )
             Text(
                 "versión $version",
